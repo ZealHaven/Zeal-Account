@@ -1,0 +1,98 @@
+# Zeal Account
+
+Central account system for the Zeal product family. Every Zeal user pools
+here: one login account (username + password) owns one or more **personas**,
+and the Persona ID is the stable identity that all other Zeal products use.
+
+Zeal Account replaces the earlier `Zeal/Auth` prototype and is the only
+authentication layer for Zeal products. Authorization stays in each product.
+
+## Concepts
+
+- **Account** — the login credential. Username + password, nothing else.
+  Registration requires only these two fields.
+- **Persona** — the identity an account presents to Zeal products. Each
+  account creates an initial persona right after registration, and may add
+  more later. A persona has a **system-generated ID**, a name, an optional
+  identity string (email, phone, handle, …), and a description.
+  Identities are claimable by anyone but become exclusive to the first
+  account that **verifies** them via an email code — losing claims are
+  removed and their owners are notified in-app.
+- **Persona ID = `sub`** — when a product authenticates a user through Zeal
+  Account, the OIDC `sub` claim is the Persona ID. Products key all of their
+  authorization data off the Persona ID.
+
+## How it works (user POV)
+
+1. Register with username + password.
+2. Create the initial persona (name, optional identity, description).
+3. Log in anytime to manage personas, change username, or change password.
+4. Use the account to access any Zeal product — Account handles login, then
+   asks which persona to use the first time; the choice becomes the
+   default for that product (a persona switcher comes later).
+
+Locked-out users recover access with **recovery codes** shown once at
+registration. **TOTP MFA** is an optional login step-up (post-MVP phase).
+The portal has an **in-app notification bell** — identity evictions and
+security events (password changed, MFA on/off, recovery codes rotated)
+show up there.
+
+## How it works (product POV)
+
+- Zeal Account is an **OIDC provider** (authorization code + PKCE).
+- Products integrate with standard OIDC client libraries.
+- `sub` in the ID/access token is the **Persona ID**.
+- Products validate JWTs locally via JWKS (`/.well-known/jwks.json`).
+- Authorization (roles, permissions, per-product data) is owned by each
+  product, keyed by Persona ID.
+
+## Stack
+
+- **Go** + [fosite](https://github.com/ory/fosite) (OAuth2/OIDC)
+- **SvelteKit** frontend (account portal: login, register, persona picker,
+  settings)
+- **Postgres** — accounts, personas, identities, notifications, OAuth
+  clients, tokens
+- **Redis** — sessions, rate limiting, token revocation
+- **Docker Compose** — local infra
+- **SMTP** — identity-verification codes only (no marketing/email flows)
+- **just** — task runner
+
+## Quick start
+
+```bash
+# 1. Infra
+cp .env.example .env
+just up
+
+# 2. Migrate
+just migrate-up
+
+# 3. Dev (backend + Vite dev server)
+just dev
+```
+
+## Documentation
+
+- [`docs/plans/1-mvp.md`](docs/plans/1-mvp.md) — full requirements, data
+  model, OIDC design, and phased implementation plan
+- [`AGENTS.md`](AGENTS.md) — working guide for AI agents in this repo
+
+## Project layout
+
+```
+backend/account/    Go service (OIDC provider, account/persona API)
+frontend/account/   SvelteKit app (portal + login/persona UI)
+migrations/         SQL migrations
+ops/                nginx / systemd / deploy helpers
+docs/               plans and design notes
+```
+
+## Status
+
+Planning. Issuer: `https://account.zealhaven.id` (first deploy:
+zeal-staging). See [`docs/plans/1-mvp.md`](docs/plans/1-mvp.md).
+
+## License
+
+MIT
