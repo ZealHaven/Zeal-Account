@@ -28,9 +28,15 @@ var (
 
 var usernameRe = regexp.MustCompile(`^[a-zA-Z0-9._-]{3,32}$`)
 
-// ErrIdentityTaken signals an identity claimed by another account (phase 2
-// makes this exclusive-after-verification; MVP: blocked outright).
-var ErrIdentityTaken = errors.New("identity is already claimed by another account")
+// ErrIdentityVerified signals an identity VERIFIED by another account —
+// pending claims collide freely, but a verified identity is exclusive.
+var ErrIdentityVerified = errors.New("identity is already verified by another account")
+
+// Identity verification failures.
+var (
+	ErrNoIdentity      = errors.New("persona has no identity to verify")
+	ErrAlreadyVerified = errors.New("identity is already verified for this account")
+)
 
 const (
 	minPasswordLen     = 8
@@ -47,11 +53,13 @@ type Account struct {
 	accounts *repository.Account
 	personas *repository.Persona
 	recovery *repository.RecoveryCode
+	claims   *repository.IdentityClaim
+	notify   *repository.Notification
 }
 
 // NewAccount builds the service.
-func NewAccount(accounts *repository.Account, personas *repository.Persona, recovery *repository.RecoveryCode) *Account {
-	return &Account{accounts: accounts, personas: personas, recovery: recovery}
+func NewAccount(accounts *repository.Account, personas *repository.Persona, recovery *repository.RecoveryCode, claims *repository.IdentityClaim, notify *repository.Notification) *Account {
+	return &Account{accounts: accounts, personas: personas, recovery: recovery, claims: claims, notify: notify}
 }
 
 // RegisterResult is what registration returns to the caller.
@@ -132,7 +140,12 @@ func (s *Account) ChangePassword(ctx context.Context, id uuid.UUID, current, nex
 	if err != nil {
 		return err
 	}
-	return s.accounts.UpdatePassword(ctx, id, hash)
+	if err := s.accounts.UpdatePassword(ctx, id, hash); err != nil {
+		return err
+	}
+	s.NotifySecurity(ctx, id, model.NotifyPasswordChanged,
+		"Password changed", "Your account password was changed.")
+	return nil
 }
 
 // ResetPassword consumes a recovery code and sets a new password.
@@ -158,7 +171,12 @@ func (s *Account) ResetPassword(ctx context.Context, username, code, next string
 	if err != nil {
 		return err
 	}
-	return s.accounts.UpdatePassword(ctx, acct.ID, hash)
+	if err := s.accounts.UpdatePassword(ctx, acct.ID, hash); err != nil {
+		return err
+	}
+	s.NotifySecurity(ctx, acct.ID, model.NotifyPasswordReset,
+		"Password reset", "Your password was reset using a recovery code.")
+	return nil
 }
 
 // RegenerateRecoveryCodes replaces an account's codes.
@@ -170,6 +188,8 @@ func (s *Account) RegenerateRecoveryCodes(ctx context.Context, id uuid.UUID) ([]
 	if err := s.recovery.ReplaceForAccount(ctx, id, hashes); err != nil {
 		return nil, err
 	}
+	s.NotifySecurity(ctx, id, model.NotifyRecoveryCodesRegen,
+		"Recovery codes regenerated", "Your previous recovery codes no longer work.")
 	return codes, nil
 }
 
@@ -180,8 +200,9 @@ func (s *Account) Get(ctx context.Context, id uuid.UUID) (model.Account, error) 
 
 // --- personas ---------------------------------------------------------------
 
-// CreatePersona creates a persona, rejecting identities already bound to
-// another account.
+// CreatePersona creates a persona. Identities are claim-then-verify:
+// pending claims collide freely, but a VERIFIED identity is exclusive to
+// its account. A new claim is registered alongside the persona.
 func (s *Account) CreatePersona(ctx context.Context, accountID uuid.UUID, name string, identity, description *string) (model.Persona, error) {
 	name = strings.TrimSpace(name)
 	if name == "" || len(name) > maxPersonaNameLen {
@@ -196,15 +217,24 @@ func (s *Account) CreatePersona(ctx context.Context, accountID uuid.UUID, name s
 		return model.Persona{}, err
 	}
 	if identity != nil {
-		taken, err := s.personas.IdentityOwnedByOther(ctx, *identity, accountID)
+		exclusive, err := s.identityExclusiveToOther(ctx, *identity, accountID)
 		if err != nil {
 			return model.Persona{}, err
 		}
-		if taken {
-			return model.Persona{}, ErrIdentityTaken
+		if exclusive {
+			return model.Persona{}, ErrIdentityVerified
 		}
 	}
-	return s.personas.Create(ctx, accountID, name, identity, description)
+	p, err := s.personas.Create(ctx, accountID, name, identity, description)
+	if err != nil {
+		return model.Persona{}, err
+	}
+	if identity != nil {
+		if err := s.claims.Claim(ctx, *identity, accountID); err != nil {
+			return model.Persona{}, err
+		}
+	}
+	return p, nil
 }
 
 // ListPersonas returns the account's personas.
@@ -214,6 +244,8 @@ func (s *Account) ListPersonas(ctx context.Context, accountID uuid.UUID) ([]mode
 
 // UpdatePersona patches one persona the account owns. A present-but-empty
 // identity clears the field; an absent (nil) identity leaves it unchanged.
+// Setting a new identity follows claim-then-verify: pending claims may
+// collide, verified identities are exclusive.
 func (s *Account) UpdatePersona(ctx context.Context, id, accountID uuid.UUID, name, identity, description *string) (model.Persona, error) {
 	if name != nil {
 		trimmed := strings.TrimSpace(*name)
@@ -230,12 +262,12 @@ func (s *Account) UpdatePersona(ctx context.Context, id, accountID uuid.UUID, na
 			return model.Persona{}, err
 		}
 		if identity != nil {
-			taken, err := s.personas.IdentityOwnedByOther(ctx, *identity, accountID)
+			exclusive, err := s.identityExclusiveToOther(ctx, *identity, accountID)
 			if err != nil {
 				return model.Persona{}, err
 			}
-			if taken {
-				return model.Persona{}, ErrIdentityTaken
+			if exclusive {
+				return model.Persona{}, ErrIdentityVerified
 			}
 		}
 	}
@@ -245,7 +277,77 @@ func (s *Account) UpdatePersona(ctx context.Context, id, accountID uuid.UUID, na
 			return model.Persona{}, err
 		}
 	}
-	return s.personas.Update(ctx, id, accountID, name, description, identity, writeIdentity)
+	p, err := s.personas.Update(ctx, id, accountID, name, description, identity, writeIdentity)
+	if err != nil {
+		return model.Persona{}, err
+	}
+	// Keep the claim registry in step with the persona's identity.
+	if writeIdentity && p.Identity != nil {
+		if err := s.claims.Claim(ctx, *p.Identity, accountID); err != nil {
+			return model.Persona{}, err
+		}
+	}
+	return p, nil
+}
+
+// identityExclusiveToOther reports whether the identity is VERIFIED by a
+// different account (pending claims don't block).
+func (s *Account) identityExclusiveToOther(ctx context.Context, identity string, accountID uuid.UUID) (bool, error) {
+	verified, err := s.claims.VerifiedByOther(ctx, identity, accountID)
+	if err != nil {
+		return false, err
+	}
+	return verified, nil
+}
+
+// RequestIdentityOTP starts verification: stores a fresh OTP on the
+// account's claim and returns the plaintext code plus the destination
+// address for email delivery. The persona must exist and carry the identity.
+func (s *Account) RequestIdentityOTP(ctx context.Context, accountID uuid.UUID, personaID uuid.UUID) (code, destination string, err error) {
+	p, err := s.personas.Get(ctx, personaID, accountID)
+	if err != nil {
+		return "", "", err
+	}
+	if p.Identity == nil || *p.Identity == "" {
+		return "", "", ErrNoIdentity
+	}
+	status, err := s.claims.Status(ctx, *p.Identity, accountID)
+	if err != nil {
+		return "", "", err
+	}
+	if status == repository.ClaimVerifiedByAccount {
+		return "", "", ErrAlreadyVerified
+	}
+	plain, hash, err := repository.HashOTP()
+	if err != nil {
+		return "", "", err
+	}
+	if err := s.claims.Claim(ctx, *p.Identity, accountID); err != nil {
+		return "", "", err
+	}
+	if err := s.claims.SetOTP(ctx, *p.Identity, accountID, hash); err != nil {
+		return "", "", err
+	}
+	return plain, *p.Identity, nil
+}
+
+// ConfirmIdentityOTP verifies the code, evicting losing claims (and
+// notifying their accounts) atomically.
+func (s *Account) ConfirmIdentityOTP(ctx context.Context, accountID uuid.UUID, personaID uuid.UUID, code string) (*repository.Eviction, error) {
+	p, err := s.personas.Get(ctx, personaID, accountID)
+	if err != nil {
+		return nil, err
+	}
+	if p.Identity == nil || *p.Identity == "" {
+		return nil, ErrNoIdentity
+	}
+	return s.claims.Verify(ctx, *p.Identity, accountID, strings.TrimSpace(code))
+}
+
+// NotifySecurity records an in-app security notification for the account.
+// Best-effort: a failed notification never fails the triggering op.
+func (s *Account) NotifySecurity(ctx context.Context, accountID uuid.UUID, typ, title, body string) {
+	_ = s.notify.Insert(ctx, accountID, typ, title, body, nil)
 }
 
 // --- helpers ----------------------------------------------------------------

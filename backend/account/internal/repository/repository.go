@@ -284,19 +284,3 @@ func (r *RecoveryCode) Consume(ctx context.Context, accountID uuid.UUID, normali
 	}
 	return false, nil
 }
-
-// IdentityOwnedByOther reports whether the identity is already used by at
-// least one persona of a different account.
-func (r *Persona) IdentityOwnedByOther(ctx context.Context, identity string, accountID uuid.UUID) (bool, error) {
-	var exists bool
-	err := r.pool.QueryRow(ctx, `
-		SELECT EXISTS (
-			SELECT 1 FROM personas
-			WHERE identity = $1 AND account_id <> $2
-		)
-	`, identity, accountID).Scan(&exists)
-	if err != nil {
-		return false, fmt.Errorf("identity lookup: %w", err)
-	}
-	return exists, nil
-}

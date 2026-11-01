@@ -27,7 +27,11 @@ func writeError(w http.ResponseWriter, err error) {
 		errors.Is(err, service.ErrInvalidName),
 		errors.Is(err, service.ErrWrongPassword),
 		errors.Is(err, service.ErrBadRecoveryCode),
-		errors.Is(err, service.ErrIdentityTaken):
+		errors.Is(err, service.ErrIdentityVerified),
+		errors.Is(err, service.ErrNoIdentity),
+		errors.Is(err, service.ErrAlreadyVerified),
+		errors.Is(err, repository.ErrOTPInvalid),
+		errors.Is(err, repository.ErrOTPExpired):
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 	case errors.Is(err, repository.ErrConflict):
 		writeJSON(w, http.StatusConflict, map[string]string{"error": "username is already taken"})

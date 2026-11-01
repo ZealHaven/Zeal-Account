@@ -15,6 +15,7 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"account/backend/account/internal/handler"
+	"account/backend/account/internal/mailer"
 	"account/backend/account/internal/repository"
 	"account/backend/account/internal/service"
 	"account/backend/account/internal/session"
@@ -26,6 +27,7 @@ type Deps struct {
 	Pool        *pgxpool.Pool
 	RDB         *redis.Client
 	Secure      bool
+	SMTP        mailer.Config
 	Log         *slog.Logger
 }
 
@@ -43,11 +45,16 @@ func New(d Deps) (http.Handler, error) {
 	accounts := repository.NewAccount(d.Pool)
 	personaRepo := repository.NewPersona(d.Pool)
 	recoveryRepo := repository.NewRecoveryCode(d.Pool)
-	svc := service.NewAccount(accounts, personaRepo, recoveryRepo)
+	claimRepo := repository.NewIdentityClaim(d.Pool)
+	notifyRepo := repository.NewNotification(d.Pool)
+	svc := service.NewAccount(accounts, personaRepo, recoveryRepo, claimRepo, notifyRepo)
 	sessions := session.New(d.RDB, d.Secure)
+	mail := mailer.New(d.SMTP, d.Log)
 
 	authH := handler.NewAuth(svc, sessions, d.Log)
 	personaH := handler.NewPersona(svc, sessions, d.Log)
+	identityH := handler.NewIdentity(svc, sessions, mail, d.Log)
+	notifyH := handler.NewNotify(notifyRepo, sessions, d.Log)
 	limiter := handler.NewRateLimiter(d.RDB)
 
 	// --- health --------------------------------------------------------------
@@ -69,6 +76,14 @@ func New(d Deps) (http.Handler, error) {
 		api.Get("/personas", personaH.List)
 		api.Post("/personas", personaH.Create)
 		api.Patch("/personas/{id}", personaH.Update)
+		api.With(limiter.Protect("identity-otp", 10, time.Hour)).Post("/personas/{id}/identity/verify", identityH.Request)
+		api.Post("/personas/{id}/identity/confirm", identityH.Confirm)
+
+		api.Get("/notifications", notifyH.List)
+		// Static path before {id}/read so "unread-count" isn't parsed as a UUID.
+		api.Get("/notifications/unread-count", notifyH.UnreadCount)
+		api.Post("/notifications/{id}/read", notifyH.MarkRead)
+		api.Post("/notifications/read-all", notifyH.MarkAllRead)
 	})
 
 	// --- Frontend (everything else) ----------------------------------------

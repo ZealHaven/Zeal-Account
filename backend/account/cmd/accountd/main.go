@@ -14,6 +14,7 @@ import (
 
 	"account/backend/account/internal/config"
 	"account/backend/account/internal/db"
+	"account/backend/account/internal/mailer"
 	"account/backend/account/internal/server"
 )
 
@@ -48,7 +49,14 @@ func main() {
 		Pool:        pool,
 		RDB:         rdb,
 		Secure:      cfg.CookieSecure,
-		Log:         log,
+		SMTP: mailer.Config{
+			Host: cfg.SMTP.Host,
+			Port: cfg.SMTP.Port,
+			User: cfg.SMTP.User,
+			Pass: cfg.SMTP.Pass,
+			From: cfg.SMTP.From,
+		},
+		Log: log,
 	})
 	if err != nil {
 		log.Error("server", "err", err)

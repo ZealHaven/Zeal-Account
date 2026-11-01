@@ -193,7 +193,9 @@ func TestAccountPhase1(t *testing.T) {
 		t.Fatalf("persona list: %d %v", resp.StatusCode, body)
 	}
 
-	// Identity owned by another account is refused.
+	// A pending claim by another account is ALLOWED (claim-then-verify:
+	// exclusivity only kicks in after email OTP verification). Phase 2's
+	// test covers the eviction; here we only assert no false rejection.
 	other := newClient(t, srv.URL)
 	resp, _ = other.do("POST", "/api/auth/register", map[string]string{
 		"username": user + "-other",
@@ -206,8 +208,8 @@ func TestAccountPhase1(t *testing.T) {
 		"name":     "Squatter",
 		"identity": "person@example.com",
 	})
-	if resp.StatusCode != 400 {
-		t.Fatalf("identity squatting: want 400, got %d %v", resp.StatusCode, body)
+	if resp.StatusCode != 201 {
+		t.Fatalf("pending identity claim: want 201, got %d %v", resp.StatusCode, body)
 	}
 
 	// PATCH: rename + clear identity (empty string clears).

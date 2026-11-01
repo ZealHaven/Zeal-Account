@@ -1,6 +1,6 @@
 # Zeal Account — MVP Plan
 
-**Status:** phases 0–1 implemented + integration-tested (2026-11-01); phase 2+ pending
+**Status:** phases 0–2 implemented + integration-tested (2026-11-01); phase 3 (OIDC provider) next
 **Goal:** Zeal Account becomes the single authentication layer for all Zeal
 products. Users register with username + password, manage personas, and use
 their account to sign in to any Zeal product via standard OIDC — with the
@@ -263,21 +263,33 @@ Vite; prod: built Node server) — same pattern as `~/Zeal/Monitor`.
   `writeIdentity` flag in the repo layer) — needed so the UI can remove an
   identity, which plain COALESCE semantics couldn't express.
 
-### Phase 2 — Identity verification & notifications
-- [ ] SMTP mailer config (`.env.example`: host, port, user, pass, from)
+### Phase 2 — Identity verification & notifications ✅ (2026-11-01)
+- [x] SMTP mailer config (`.env.example`: host, port, user, pass, from)
       + OTP send/confirm endpoints with TTL + attempt cap
-- [ ] Verify transaction: promote claim → evict losing claims + null their
+      (dev fallback: with SMTP unset, codes are logged, not sent)
+- [x] Verify transaction: promote claim → evict losing claims + null their
       personas' identity → insert `identity_claim_removed` notifications
-- [ ] Notifications: table, list/unread-count/read endpoints, portal bell
-      + `/notifications` page; security-event notifications (password
-      change/reset, recovery-code regen)
-- [ ] Persona detail UI: verify button, OTP entry, verified badge;
-      notification when your identity got evicted
+      (single DB transaction; `FOR UPDATE` row lock; OTP TTL 15 min,
+      5 attempts then code burn)
+- [x] Notifications: table, list/unread-count/read endpoints;
+      security-event notifications (password change/reset, recovery-code
+      regen)
+- [x] Persona detail UI: verify button, OTP entry, verified banner with
+      eviction counts; portal bell with unread badge + dropdown;
+      /notifications page; notification when your identity got evicted
 - **Done when:** integration test covers two accounts claiming one email →
   first to confirm OTP keeps it, second loses the claim, and the
   `identity_claim_removed` notification exists atomically with the
   eviction (verifiable per persona_id); security changes produce
-  notifications.
+  notifications. ✅ `internal/integration/phase2_test.go` passes; live
+  smoke through the front door verified the full flow (evicted_accounts=1,
+  notification names the affected persona).
+
+  **Deviation:** the plan's original "pending claims can pile up on a
+  verified identity" was tightened — once an identity is verified by an
+  account, other accounts cannot even *set* it on a persona (400), matching
+  the requirement "other account can't use it". Pending claims still
+  collide freely until someone verifies.
 
 ### Phase 3 — OIDC provider
 - [ ] Fosite store adapter + migrations for clients/tokens; seed a test

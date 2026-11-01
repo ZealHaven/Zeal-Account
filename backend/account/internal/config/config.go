@@ -22,6 +22,18 @@ type Config struct {
 	Issuer string
 	// CookieSecure marks session cookies Secure. False for local dev.
 	CookieSecure bool
+	// SMTP settings for identity-verification codes (optional in dev:
+	// when unset, codes are logged instead of emailed).
+	SMTP SMTPConfig
+}
+
+// SMTPConfig carries the outbound mail settings.
+type SMTPConfig struct {
+	Host string
+	Port string
+	User string
+	Pass string
+	From string
 }
 
 // Load reads configuration from the environment, applying defaults suitable
@@ -34,6 +46,13 @@ func Load() (Config, error) {
 		RedisURL:     os.Getenv("REDIS_URL"),
 		Issuer:       getenv("OIDC_ISSUER", "http://localhost:8080"),
 		CookieSecure: os.Getenv("COOKIE_SECURE") == "true",
+		SMTP: SMTPConfig{
+			Host: os.Getenv("SMTP_HOST"),
+			Port: getenv("SMTP_PORT", "587"),
+			User: os.Getenv("SMTP_USER"),
+			Pass: os.Getenv("SMTP_PASS"),
+			From: os.Getenv("SMTP_FROM"),
+		},
 	}
 	if cfg.DatabaseURL == "" {
 		return Config{}, fmt.Errorf("DATABASE_URL is required")
