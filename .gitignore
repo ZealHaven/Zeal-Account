@@ -1,0 +1,13 @@
+# binaries
+bin/
+# deps
+node_modules/
+# env
+.env
+# build output
+frontend/account/.svelte-kit/
+frontend/account/build/
+# test artifacts
+test-results/
+playwright-report/
+tmp/

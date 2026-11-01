@@ -1,6 +1,6 @@
 # Zeal Account — MVP Plan
 
-**Status:** planning (2026-10-31)
+**Status:** phases 0–1 implemented + integration-tested (2026-11-01); phase 2+ pending
 **Goal:** Zeal Account becomes the single authentication layer for all Zeal
 products. Users register with username + password, manage personas, and use
 their account to sign in to any Zeal product via standard OIDC — with the
@@ -232,25 +232,36 @@ Vite; prod: built Node server) — same pattern as `~/Zeal/Monitor`.
 
 ## 7. Phases
 
-### Phase 0 — Foundation
-- [ ] Repo scaffold: `backend/account` (Go module, chi router, config,
+### Phase 0 — Foundation ✅ (2026-11-01)
+- [x] Repo scaffold: `backend/account` (Go module, chi router, config,
       db pool, healthz), `frontend/account` (SvelteKit + TS), `go.work`
-- [ ] `justfile` (up/down/migrate/dev/build/test), `.env.example`,
+- [x] `justfile` (up/down/migrate/dev/build/test), `.env.example`,
       docker-compose for Postgres + Redis
-- [ ] CI-less quality gate: `just check` = go vet + svelte-check + tsc
+- [x] CI-less quality gate: `just check` = go vet + svelte-check
 - **Done when:** `just dev` serves a healthz from Go and the SvelteKit
-  placeholder through the proxy.
+  placeholder through the proxy. ✅ All routes (portal pages) verified 200
+  via the Go front door; `npm run check` and `go vet` clean.
 
-### Phase 1 — Accounts & personas
-- [ ] Migrations: `accounts`, `personas`
-- [ ] Register / login / logout / session cookie (argon2id, rate limits)
-- [ ] Persona CRUD; onboarding flow enforcing ≥1 persona
-- [ ] Settings: change username, change password
-- [ ] Recovery codes generated at registration (hashed, shown once) +
-      forgot-password flow (username → recovery code → new password)
+### Phase 1 — Accounts & personas ✅ (2026-11-01)
+- [x] Migrations: `accounts`, `personas`
+- [x] Register / login / logout / session cookie (argon2id, Redis
+      rate limits on register/login/reset/password-change)
+- [x] Persona CRUD; onboarding flow enforcing ≥1 persona (portal route;
+      SSO enforcement arrives with /authorize in phase 3)
+- [x] Settings: change username, change password
+- [x] Recovery codes generated at registration (hashed, shown once) +
+      forgot-password flow (username → recovery code → new password;
+      codes single-use, regenerate invalidates old)
 - **Done when:** integration test covers register → onboard → login →
   create/edit persona → change password → reset password via recovery
-  code; UI works end to end.
+  code; UI works end to end. ✅ `just test-integration`
+  (`internal/integration/phase1_test.go`) passes; all portal pages render
+  through the front door.
+
+  **Deviation:** `PATCH /api/personas/{id}` treats `identity: ""` as
+  "clear the field" and an absent key as "unchanged" (explicit
+  `writeIdentity` flag in the repo layer) — needed so the UI can remove an
+  identity, which plain COALESCE semantics couldn't express.
 
 ### Phase 2 — Identity verification & notifications
 - [ ] SMTP mailer config (`.env.example`: host, port, user, pass, from)
