@@ -25,6 +25,12 @@ type Config struct {
 	// SMTP settings for identity-verification codes (optional in dev:
 	// when unset, codes are logged instead of emailed).
 	SMTP SMTPConfig
+	// KeyEncHex is the 32-byte AES key (hex) that encrypts OIDC signing
+	// keys at rest.
+	KeyEncHex string
+	// GlobalSecret is the 32-byte HMAC secret fosite uses to sign opaque
+	// tokens (authorize codes, access/refresh tokens).
+	GlobalSecret string
 }
 
 // SMTPConfig carries the outbound mail settings.
@@ -53,12 +59,22 @@ func Load() (Config, error) {
 			Pass: os.Getenv("SMTP_PASS"),
 			From: os.Getenv("SMTP_FROM"),
 		},
+		KeyEncHex:    os.Getenv("KEY_ENC_HEX"),
+		GlobalSecret: os.Getenv("GLOBAL_SECRET"),
 	}
 	if cfg.DatabaseURL == "" {
 		return Config{}, fmt.Errorf("DATABASE_URL is required")
 	}
 	if cfg.RedisURL == "" {
 		return Config{}, fmt.Errorf("REDIS_URL is required")
+	}
+	if cfg.KeyEncHex == "" {
+		// Dev-only fallback; production MUST set KEY_ENC_HEX (see .env.example).
+		cfg.KeyEncHex = "0000000000000000000000000000000000000000000000000000000000000000"
+	}
+	if cfg.GlobalSecret == "" {
+		// Dev-only fallback; production MUST set GLOBAL_SECRET (32+ bytes).
+		cfg.GlobalSecret = "dev-only-global-secret-change-me!!"
 	}
 	return cfg, nil
 }

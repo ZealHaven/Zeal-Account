@@ -44,11 +44,15 @@ func main() {
 	}
 	defer rdb.Close()
 
+	// OIDC signing keys are bootstrapped by server.New (single wiring point).
 	handler, err := server.New(server.Deps{
-		FrontendURL: cfg.FrontendURL,
-		Pool:        pool,
-		RDB:         rdb,
-		Secure:      cfg.CookieSecure,
+		FrontendURL:  cfg.FrontendURL,
+		Pool:         pool,
+		RDB:          rdb,
+		Secure:       cfg.CookieSecure,
+		Issuer:       cfg.Issuer,
+		KeyEncHex:    cfg.KeyEncHex,
+		GlobalSecret: cfg.GlobalSecret,
 		SMTP: mailer.Config{
 			Host: cfg.SMTP.Host,
 			Port: cfg.SMTP.Port,

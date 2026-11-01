@@ -46,6 +46,34 @@ show up there.
 - Authorization (roles, permissions, per-product data) is owned by each
   product, keyed by Persona ID.
 
+### OIDC endpoints
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/.well-known/openid-configuration` | discovery |
+| GET | `/.well-known/jwks.json` (also `/jwks.json`) | RS256 keys |
+| GET | `/authorize` | start flow → login → persona picker |
+| POST | `/token` | code → tokens / refresh (form-encoded) |
+| GET | `/userinfo` | claims for the access token |
+| POST | `/revoke` | token revocation (RFC 7009) |
+
+### Portal API
+
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `/api/auth/register` | create account (username, password) → session |
+| POST | `/api/auth/login` | username + password → session |
+| POST | `/api/auth/logout` | clear session |
+| GET | `/api/me` | current account + personas |
+| PATCH | `/api/me` | change username |
+| POST | `/api/me/password` | change password |
+| POST | `/api/auth/forgot-password` · `/api/auth/reset-password` | recovery-code reset |
+| POST | `/api/me/recovery-codes` | regenerate recovery codes |
+| GET/POST | `/api/personas` · PATCH `/api/personas/{id}` | persona CRUD |
+| POST | `/api/personas/{id}/identity/verify` · `/confirm` | email-OTP identity verification |
+| GET | `/api/notifications` · `unread-count` · mark-read | in-app notifications |
+| POST | `/api/oidc/persona-select` | SSO persona picker callback |
+
 ## Stack
 
 - **Go** + [fosite](https://github.com/ory/fosite) (OAuth2/OIDC)

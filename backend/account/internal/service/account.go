@@ -242,6 +242,17 @@ func (s *Account) ListPersonas(ctx context.Context, accountID uuid.UUID) ([]mode
 	return s.personas.ListByAccount(ctx, accountID)
 }
 
+// GetPersona returns one persona the account owns (OIDC picker).
+func (s *Account) GetPersona(ctx context.Context, id, accountID uuid.UUID) (model.Persona, error) {
+	return s.personas.Get(ctx, id, accountID)
+}
+
+// ClaimStatus reports whether the identity is pending/unclaimed or
+// verified (for this account or another).
+func (s *Account) ClaimStatus(ctx context.Context, identity string, accountID uuid.UUID) (repository.ClaimStatus, error) {
+	return s.claims.Status(ctx, identity, accountID)
+}
+
 // UpdatePersona patches one persona the account owns. A present-but-empty
 // identity clears the field; an absent (nil) identity leaves it unchanged.
 // Setting a new identity follows claim-then-verify: pending claims may

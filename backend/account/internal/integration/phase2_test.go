@@ -39,7 +39,11 @@ func startServer(t *testing.T) (*httptest.Server, *repository.Notification, func
 		pool.Close()
 		t.Fatalf("redis: %v", err)
 	}
-	if _, err := pool.Exec(ctx, `TRUNCATE notifications, account_identities, recovery_codes, personas, accounts CASCADE`); err != nil {
+	if _, err := pool.Exec(ctx, `
+		TRUNCATE notifications, account_identities, persona_defaults,
+		         fosite_requests, oauth_access_tokens, oauth_client_assertions,
+		         recovery_codes, personas, accounts, signing_keys CASCADE
+	`); err != nil {
 		t.Fatalf("truncate: %v", err)
 	}
 	if err := rdb.FlushDB(ctx).Err(); err != nil {
@@ -50,12 +54,15 @@ func startServer(t *testing.T) (*httptest.Server, *repository.Notification, func
 	// SMTP is unset → the mailer logs codes instead of sending; the
 	// repository's HashOTP path is exercised directly below.
 	h, err := server.New(server.Deps{
-		FrontendURL: "",
-		Pool:        pool,
-		RDB:         rdb,
-		Secure:      false,
-		SMTP:        mailer.Config{},
-		Log:         log,
+		FrontendURL:  "",
+		Pool:         pool,
+		RDB:          rdb,
+		Secure:       false,
+		Issuer:       "http://localhost:8080",
+		KeyEncHex:    testKeyEncHex,
+		GlobalSecret: testGlobalSecret,
+		SMTP:         mailer.Config{},
+		Log:          log,
 	})
 	if err != nil {
 		t.Fatalf("server: %v", err)

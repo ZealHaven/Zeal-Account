@@ -3,6 +3,8 @@
 package server
 
 import (
+	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/http/httputil"
@@ -16,6 +18,7 @@ import (
 
 	"account/backend/account/internal/handler"
 	"account/backend/account/internal/mailer"
+	"account/backend/account/internal/oidc"
 	"account/backend/account/internal/repository"
 	"account/backend/account/internal/service"
 	"account/backend/account/internal/session"
@@ -23,12 +26,15 @@ import (
 
 // Deps are the infrastructure handles the router needs.
 type Deps struct {
-	FrontendURL string
-	Pool        *pgxpool.Pool
-	RDB         *redis.Client
-	Secure      bool
-	SMTP        mailer.Config
-	Log         *slog.Logger
+	FrontendURL  string
+	Pool         *pgxpool.Pool
+	RDB          *redis.Client
+	Secure       bool
+	Issuer       string
+	KeyEncHex    string
+	GlobalSecret string
+	SMTP         mailer.Config
+	Log          *slog.Logger
 }
 
 // New builds the root handler. FrontendURL may be empty, in which case
@@ -57,8 +63,32 @@ func New(d Deps) (http.Handler, error) {
 	notifyH := handler.NewNotify(notifyRepo, sessions, d.Log)
 	limiter := handler.NewRateLimiter(d.RDB)
 
+	// --- OIDC provider -------------------------------------------------------
+	keys, err := oidc.NewKeyService(d.Pool, d.KeyEncHex)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := keys.EnsureActiveKey(context.Background()); err != nil {
+		return nil, fmt.Errorf("oidc key bootstrap: %w", err)
+	}
+	provider, err := oidc.NewProvider(d.Pool, keys, d.Issuer, []byte(d.GlobalSecret))
+	if err != nil {
+		return nil, err
+	}
+	oidcH := handler.NewOIDC(provider, keys, personaRepo, sessions, svc,
+		oidc.NewPersonaDefault(d.Pool), d.Issuer, d.Log)
+
 	// --- health --------------------------------------------------------------
 	r.Get("/healthz", handler.Healthz)
+
+	// --- OIDC (standards endpoints — products depend on these paths) --------
+	r.Get("/.well-known/openid-configuration", oidcH.Discovery)
+	r.Get("/.well-known/jwks.json", oidcH.JWKS)
+	r.Get("/jwks.json", oidcH.JWKS)
+	r.Get("/authorize", oidcH.Authorize)
+	r.With(limiter.Protect("token", 60, time.Minute)).Post("/token", oidcH.Token)
+	r.Get("/userinfo", oidcH.UserInfo)
+	r.Post("/revoke", oidcH.Revoke)
 
 	// --- API -----------------------------------------------------------------
 	r.Route("/api", func(api chi.Router) {
@@ -84,6 +114,8 @@ func New(d Deps) (http.Handler, error) {
 		api.Get("/notifications/unread-count", notifyH.UnreadCount)
 		api.Post("/notifications/{id}/read", notifyH.MarkRead)
 		api.Post("/notifications/read-all", notifyH.MarkAllRead)
+
+		api.Post("/oidc/persona-select", oidcH.PersonaSelect)
 	})
 
 	// --- Frontend (everything else) ----------------------------------------

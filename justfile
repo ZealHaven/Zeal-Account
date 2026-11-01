@@ -63,7 +63,9 @@ test:
 test-cover:
     cd {{backend_dir}} && go test -cover ./...
 
-# Full OIDC/API flows against real Postgres + Redis (requires `just up`)
+# Full OIDC/API flows against real Postgres + Redis (requires `just up`).
+# NOTE: tests share the dev DATABASE_URL and rotate signing_keys — after
+# running them, restart `just dev` so the server regenerates its own key.
 test-integration:
     cd {{backend_dir}} && go test -tags=integration ./...
 

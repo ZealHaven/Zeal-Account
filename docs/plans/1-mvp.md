@@ -1,6 +1,6 @@
 # Zeal Account — MVP Plan
 
-**Status:** phases 0–2 implemented + integration-tested (2026-11-01); phase 3 (OIDC provider) next
+**Status:** phases 0–3 implemented + integration-tested (2026-11-01); phase 4 (first product integration) next
 **Goal:** Zeal Account becomes the single authentication layer for all Zeal
 products. Users register with username + password, manage personas, and use
 their account to sign in to any Zeal product via standard OIDC — with the
@@ -291,17 +291,31 @@ Vite; prod: built Node server) — same pattern as `~/Zeal/Monitor`.
   the requirement "other account can't use it". Pending claims still
   collide freely until someone verifies.
 
-### Phase 3 — OIDC provider
-- [ ] Fosite store adapter + migrations for clients/tokens; seed a test
-      first-party client
-- [ ] Endpoints: discovery, JWKS, authorize, token, userinfo, revoke
-- [ ] Login + persona-picker screens integrated into `/authorize`
-      (`prompt=select_account`, first-pick-becomes-default)
-- [ ] RS256 key management (generate at bootstrap, JWKS served)
-- [ ] E2E test: full authorization-code + PKCE loop, assert `sub` = persona
+### Phase 3 — OIDC provider ✅ (2026-11-01, UI picker same day)
+- [x] Fosite store adapter + migrations for clients/tokens; seed a test
+      first-party client (`zeal-test`, public SPA, PKCE-only)
+- [x] Endpoints: discovery, JWKS, authorize, token, userinfo, revoke
+- [x] Login + persona-picker screens integrated into `/authorize`
+      (`prompt=select_account`, first-pick-becomes-default via
+      `persona_defaults` table)
+- [x] RS256 key management (AES-encrypted at rest, generated at
+      bootstrap, JWKS served; opaque tokens HMAC via GLOBAL_SECRET)
+- [x] E2E test: full authorization-code + PKCE loop, assert `sub` = persona
       ID
 - **Done when:** a test client completes the flow and gets a verifiable
-  JWT with the persona `sub`.
+  JWT with the persona `sub`. ✅ `internal/integration/phase3_test.go`
+  covers: discovery issuer match, JWKS keys present, picker → select →
+  code, token exchange, **id_token `sub` == persona ID** +
+  zeal_account_id/name/identity/verified claims, userinfo sub match,
+  code replay rejected (family revoked), refresh grant re-issues with
+  persona sub, wrong PKCE verifier rejected, prompt=select_account forces
+  picker, anonymous → /login redirect, unknown client refused without
+  redirect.
+
+  **Notes:** opaque tokens (codes/access/refresh) are HMAC-SHA512/256;
+  ID tokens are RS256 JWTs verifiable via JWKS. Refresh rotation +
+  reuse detection come from fosite + the storage adapter's invalidated
+  flag (reuse ⇒ whole family revoked).
 
 ### Phase 4 — First product integration
 - [ ] Integration guide in `docs/` (redirect setup, token validation via

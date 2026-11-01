@@ -32,6 +32,12 @@ type client struct {
 	hc   *http.Client
 }
 
+// testKeyEncHex is a throwaway 32-byte AES key for test environments.
+const testKeyEncHex = "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+
+// testGlobalSecret is a throwaway 32-byte HMAC secret for test environments.
+const testGlobalSecret = "test-global-secret-32-bytes-exact!"
+
 func newClient(t *testing.T, base string) *client {
 	jar, err := cookiejar.New(nil)
 	if err != nil {
@@ -85,7 +91,7 @@ func TestAccountPhase1(t *testing.T) {
 	}
 	defer pool.Close()
 	// Isolate this run from any dev data.
-	if _, err := pool.Exec(ctx, `TRUNCATE recovery_codes, personas, accounts CASCADE`); err != nil {
+	if _, err := pool.Exec(ctx, `TRUNCATE recovery_codes, personas, accounts, signing_keys CASCADE`); err != nil {
 		t.Fatalf("truncate: %v", err)
 	}
 
@@ -100,11 +106,14 @@ func TestAccountPhase1(t *testing.T) {
 
 	log := slog.New(slog.DiscardHandler)
 	handler, err := server.New(server.Deps{
-		FrontendURL: "", // API only — frontend isn't under test
-		Pool:        pool,
-		RDB:         rdb,
-		Secure:      false,
-		Log:         log,
+		FrontendURL:  "", // API only — frontend isn't under test
+		Pool:         pool,
+		RDB:          rdb,
+		Secure:       false,
+		Issuer:       "http://localhost:8080",
+		KeyEncHex:    testKeyEncHex,
+		GlobalSecret: testGlobalSecret,
+		Log:          log,
 	})
 	if err != nil {
 		t.Fatalf("server: %v", err)
