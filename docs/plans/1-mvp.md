@@ -1,6 +1,6 @@
 # Zeal Account — MVP Plan
 
-**Status:** phases 0–3 implemented + integration-tested (2026-11-01); phase 4 (first product integration) next
+**Status:** phases 0–4 implemented + integration-tested (2026-11-02); phase 5 (hardening & ops) next
 **Goal:** Zeal Account becomes the single authentication layer for all Zeal
 products. Users register with username + password, manage personas, and use
 their account to sign in to any Zeal product via standard OIDC — with the
@@ -317,12 +317,47 @@ Vite; prod: built Node server) — same pattern as `~/Zeal/Monitor`.
   reuse detection come from fosite + the storage adapter's invalidated
   flag (reuse ⇒ whole family revoked).
 
-### Phase 4 — First product integration
-- [ ] Integration guide in `docs/` (redirect setup, token validation via
-      JWKS, handling persona claims, refresh rotation)
-- [ ] Bootstrap script/migration to register a real Zeal product client
+### Phase 4 — First product integration ✅ (2026-11-02)
+- [x] Integration guide in `docs/` (redirect setup, token validation via
+      JWKS, handling persona claims, refresh rotation):
+      `docs/integration.md`
+- [x] Bootstrap: migration `000006_connect_client` seeds the confidential
+      `connect` client (bcrypt secret hash, dev + prod redirect URIs) +
+      `just client-secret` (`cmd/clientsecret`) generates future
+      plaintext/hash pairs (plaintext → product `.env` only)
+- [x] First real product = **Zeal Connect**: its
+      `TestPhase1LoginKeyPublish` passes against the running Account
+      (login → picker → code → `/token` → JWKS-validated ID token with
+      `sub` = persona ID → session → key publish → logout), plus a
+      fresh-browser headless smoke (Connect → Account login → persona
+      picker → callback → session on `/setup-key`)
 - **Done when:** one real Zeal product authenticates against Account in a
-  staging environment.
+  staging environment. ⚠️ authenticated in the **local full-stack
+  environment** — the zeal-staging rollout itself is phase 5 scope
+  (deployment artifacts), verified there when deployed. *(Deviation
+  chosen 2026-11-02.)*
+
+  **Deviations/notes:**
+  - **Fixed (found by this phase's browser smoke):** the portal login
+    page used SvelteKit `goto(next)` after a successful login, but
+    `/authorize` is a Go front-door route — `goto` threw
+    `navigation_route_missing` and **fresh-session SSO users were
+    stranded on `/login`**. Now `/authorize…` targets get a full
+    `window.location.assign` (same as the picker's post-select
+    redirect), with a same-origin guard on `next`.
+  - Fosite issues the final code redirect as **303 See Other** while
+    Account's own redirects are 302 — client-side tests must accept any
+    3xx (documented in `docs/integration.md` §8; Connect's test fixed).
+  - **Fixed (found by manual testing):** `middleware.Timeout(30s)`
+    bound every proxied request context, and `httputil.ReverseProxy`
+    tears WebSocket upgrades down when that context fires — Vite's HMR
+    socket through the front door died at exactly 30s and its reconnect
+    did a **full page reload**, wiping in-memory page state (this is
+    what reset the once-shown recovery codes back to the register form).
+    The frontend proxy now detaches cancellation for `Upgrade` requests
+    (`context.WithoutCancel`); API/OIDC routes keep the 30s bound.
+    Verified: HMR socket survives 75s+ through the front door (was:
+    dead at 30.1s, reload at 30.8s).
 
 ### Phase 5 — Hardening & ops
 - [ ] Refresh-token rotation + reuse detection, logout propagation

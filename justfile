@@ -28,9 +28,13 @@ migrate-down:
 migrate-new name:
     migrate -path migrations -database "{{db_url}}" create -ext sql {{name}}
 
+# Fresh OAuth client secret pair: plaintext (product .env) + bcrypt hash (migration)
+client-secret:
+    cd {{backend_dir}} && go run ./cmd/clientsecret
+
 # --- dev ---------------------------------------------------------------------
 
-# Backend (:8080) + Vite dev server (:5273) behind the Go proxy
+# Backend (:8082) + Vite dev server (:5273) behind the Go proxy
 dev:
     #!/usr/bin/env bash
     set -euo pipefail

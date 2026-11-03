@@ -19,6 +19,20 @@
 		return Object.keys(e).length === 0;
 	}
 
+	// `next` is either an app route or a Go front-door route (/authorize…).
+	// goto() only accepts SvelteKit routes — for anything else it throws
+	// navigation_route_missing and the user would be stuck here, so those
+	// get a full page load (same as the persona picker's post-select
+	// redirect). Same-origin paths only: no open redirects.
+	function navigateAfterLogin(next: string | null) {
+		const target = next && next.startsWith('/') && !next.startsWith('//') ? next : '/';
+		if (target.startsWith('/authorize')) {
+			window.location.assign(target);
+			return;
+		}
+		goto(target);
+	}
+
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
 		serverError = '';
@@ -29,8 +43,7 @@
 				method: 'POST',
 				body: { username, password }
 			});
-			const next = page.url.searchParams.get('next') || '/';
-			goto(next);
+			navigateAfterLogin(page.url.searchParams.get('next'));
 		} catch (err) {
 			if (err instanceof ApiError && err.status === 401) {
 				serverError = 'Invalid username or password';
@@ -43,54 +56,36 @@
 	}
 </script>
 
-<h1>Log in</h1>
-<form onsubmit={submit}>
-	<FormField id="username" label="Username" bind:value={username} error={errors.username} autocomplete="username" />
-	<FormField id="password" label="Password" type="password" bind:value={password} error={errors.password} autocomplete="current-password" />
-	{#if serverError}
-		<p class="error" role="alert">{serverError}</p>
-	{/if}
-	<button type="submit" class="primary" disabled={submitting}>
-		{submitting ? 'Signing in…' : 'Log in'}
-	</button>
-</form>
-<p class="muted">
-	<a href="/forgot-password">Forgot password?</a>
-</p>
-<p class="muted">
-	No account? <a href="/register">Register</a>
-</p>
-
-<style>
-	form {
-		display: flex;
-		flex-direction: column;
-	}
-	.primary {
-		background: #5b7cff;
-		color: #fff;
-		border: none;
-		border-radius: 6px;
-		padding: 0.65rem 1rem;
-		font-size: 1rem;
-		cursor: pointer;
-		margin-top: 0.5rem;
-	}
-	.primary:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-	.error {
-		color: #ff6b6b;
-		font-size: 0.9rem;
-		margin: 0 0 1rem;
-	}
-	.muted {
-		color: #9aa0ac;
-		font-size: 0.9rem;
-		margin-top: 1rem;
-	}
-	.muted a {
-		color: #5b7cff;
-	}
-</style>
+<div class="auth">
+	<div class="auth-card">
+		<h1>Log in</h1>
+		<p class="sub">Sign in to your Zeal account.</p>
+		<form onsubmit={submit}>
+			<FormField
+				id="username"
+				label="Username"
+				bind:value={username}
+				error={errors.username}
+				autocomplete="username"
+			/>
+			<FormField
+				id="password"
+				label="Password"
+				type="password"
+				bind:value={password}
+				error={errors.password}
+				autocomplete="current-password"
+			/>
+			{#if serverError}
+				<p class="error" role="alert">{serverError}</p>
+			{/if}
+			<button type="submit" class="btn btn-primary btn-block" disabled={submitting}>
+				{submitting ? 'Signing in…' : 'Log in'}
+			</button>
+		</form>
+		<div class="auth-foot">
+			<a href="/forgot-password">Forgot password?</a>
+			<span>No account? <a href="/register">Register</a></span>
+		</div>
+	</div>
+</div>

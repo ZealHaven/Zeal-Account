@@ -110,7 +110,7 @@ func TestAccountPhase1(t *testing.T) {
 		Pool:         pool,
 		RDB:          rdb,
 		Secure:       false,
-		Issuer:       "http://localhost:8080",
+		Issuer:       "http://localhost:8082",
 		KeyEncHex:    testKeyEncHex,
 		GlobalSecret: testGlobalSecret,
 		Log:          log,

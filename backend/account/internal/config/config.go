@@ -9,7 +9,7 @@ import (
 
 // Config holds all runtime settings for accountd.
 type Config struct {
-	// Addr is the bind address of the HTTP server, e.g. "127.0.0.1:8080".
+	// Addr is the bind address of the HTTP server, e.g. "127.0.0.1:8082".
 	Addr string
 	// FrontendURL is where non-API, non-OIDC routes are proxied.
 	// In dev this is the Vite dev server; in prod the built SvelteKit server.
@@ -46,11 +46,11 @@ type SMTPConfig struct {
 // for local development.
 func Load() (Config, error) {
 	cfg := Config{
-		Addr:         getenv("ACCOUNT_ADDR", "127.0.0.1:8080"),
+		Addr:         getenv("ACCOUNT_ADDR", "127.0.0.1:8082"),
 		FrontendURL:  os.Getenv("FRONTEND_URL"),
 		DatabaseURL:  os.Getenv("DATABASE_URL"),
 		RedisURL:     os.Getenv("REDIS_URL"),
-		Issuer:       getenv("OIDC_ISSUER", "http://localhost:8080"),
+		Issuer:       getenv("OIDC_ISSUER", "http://localhost:8082"),
 		CookieSecure: os.Getenv("COOKIE_SECURE") == "true",
 		SMTP: SMTPConfig{
 			Host: os.Getenv("SMTP_HOST"),

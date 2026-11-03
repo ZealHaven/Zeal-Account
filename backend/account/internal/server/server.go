@@ -146,7 +146,19 @@ func newFrontendProxy(target string) (http.Handler, error) {
 		original(r)
 		r.Host = u.Host
 	}
-	return p, nil
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// WebSocket upgrades must outlive middleware.Timeout's 30s
+		// deadline: reverseproxy tears the socket down when the request
+		// context is done (handleUpgradeResponse selects on ctx.Done()).
+		// With the deadline attached, Vite's HMR socket died every 30s in
+		// dev and its reconnect did a full page reload, wiping in-memory
+		// page state (e.g. the recovery codes shown once at registration).
+		// Detach cancellation only — values (request ID, etc.) survive.
+		if r.Header.Get("Upgrade") != "" {
+			r = r.WithContext(context.WithoutCancel(r.Context()))
+		}
+		p.ServeHTTP(w, r)
+	}), nil
 }
 
 func requestLogger(log *slog.Logger) func(http.Handler) http.Handler {

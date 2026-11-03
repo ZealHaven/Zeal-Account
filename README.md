@@ -41,6 +41,9 @@ show up there.
 
 - Zeal Account is an **OIDC provider** (authorization code + PKCE).
 - Products integrate with standard OIDC client libraries.
+- **Integrating a product?** Follow [`docs/integration.md`](docs/integration.md)
+  — client registration, redirect setup, JWKS validation, persona claims,
+  refresh rotation (worked example: Zeal Connect).
 - `sub` in the ID/access token is the **Persona ID**.
 - Products validate JWTs locally via JWKS (`/.well-known/jwks.json`).
 - Authorization (roles, permissions, per-product data) is owned by each
@@ -104,6 +107,8 @@ just dev
 
 - [`docs/plans/1-mvp.md`](docs/plans/1-mvp.md) — full requirements, data
   model, OIDC design, and phased implementation plan
+- [`docs/integration.md`](docs/integration.md) — guide for Zeal products
+  integrating as OIDC clients (the phase 4 deliverable)
 - [`AGENTS.md`](AGENTS.md) — working guide for AI agents in this repo
 
 ## Project layout
@@ -118,8 +123,10 @@ docs/               plans and design notes
 
 ## Status
 
-Planning. Issuer: `https://account.zealhaven.id` (first deploy:
-zeal-staging). See [`docs/plans/1-mvp.md`](docs/plans/1-mvp.md).
+Phases 0–4 implemented and integration-tested; Zeal Connect authenticates
+against a local Account (2026-11-02). Next: phase 5 (hardening & ops).
+Issuer: `https://account.zealhaven.id` (first deploy: zeal-staging). See
+[`docs/plans/1-mvp.md`](docs/plans/1-mvp.md).
 
 ## License
 

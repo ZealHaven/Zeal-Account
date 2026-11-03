@@ -4,7 +4,7 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
 	server: {
-		// accountd (:8080) is the front door; it proxies here in development.
+		// accountd (:8082) is the front door; it proxies here in development.
 		// 5273 — 5173 is used by another app on this box.
 		port: 5273,
 		strictPort: true,

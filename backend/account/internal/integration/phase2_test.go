@@ -58,7 +58,7 @@ func startServer(t *testing.T) (*httptest.Server, *repository.Notification, func
 		Pool:         pool,
 		RDB:          rdb,
 		Secure:       false,
-		Issuer:       "http://localhost:8080",
+		Issuer:       "http://localhost:8082",
 		KeyEncHex:    testKeyEncHex,
 		GlobalSecret: testGlobalSecret,
 		SMTP:         mailer.Config{},
