@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
-	import { goto } from '$app/navigation';
 	import { api, ApiError, redirectIfLoggedOut } from '../../../lib/api';
 	import type { Persona, PersonasResponse } from '../../../lib/types';
 
@@ -75,108 +74,135 @@
 			submitting = false;
 		}
 	}
+
+	function initial(name: string): string {
+		return (name.trim()[0] ?? '?').toUpperCase();
+	}
 </script>
 
-{#if loading}
-	<p>Loading…</p>
-{:else if invalid}
-	<p class="error">Invalid sign-in request.</p>
-{:else if error}
-	<p class="error">{error}</p>
-{:else}
-	<h1>Choose a persona</h1>
-	<p class="subtext">Sign in to {clientId} as…</p>
+<div class="auth">
+	<div class="auth-card wide">
+		{#if loading}
+			<p class="muted" style="margin: 0">Loading…</p>
+		{:else if invalid}
+			<h1>Invalid sign-in request</h1>
+			<p class="error" style="margin-top: 1rem">This sign-in link is malformed or expired.</p>
+			<div class="auth-foot">
+				<a href="/">Go home</a>
+			</div>
+		{:else if error}
+			<h1>Choose a persona</h1>
+			<p class="error" style="margin-top: 1rem">{error}</p>
+		{:else}
+			<h1>Choose a persona</h1>
+			<p class="sub">Sign in to <strong>{clientId}</strong> as…</p>
 
-	{#if personas.length === 0}
-		<p class="muted">No personas yet.</p>
-		<p><a href="/onboarding">Create your first persona</a></p>
-	{:else}
-		<div class="list" role="list">
-			{#each personas as p (p.id)}
-				<button
-					type="button"
-					class="card"
-					class:selected={selectedId === p.id}
-					disabled={submitting}
-					onclick={() => choose(p)}
-				>
-					<span class="name">{p.name}</span>
-					<span class="identity">{p.identity ?? 'no identity'}</span>
-					{#if p.description}
-						<span class="desc">{p.description.length > 120 ? p.description.slice(0, 120) + '…' : p.description}</span>
-					{/if}
-				</button>
-			{/each}
-		</div>
-		{#if submitError}
-			<p class="error" role="alert">{submitError}</p>
+			{#if personas.length === 0}
+				<div class="empty">
+					<p>No personas yet.</p>
+					<a class="btn btn-primary" href="/onboarding">Create your first persona</a>
+				</div>
+			{:else}
+				<div class="list" role="list">
+					{#each personas as p (p.id)}
+						<button
+							type="button"
+							class="picker"
+							class:selected={selectedId === p.id}
+							disabled={submitting}
+							onclick={() => choose(p)}
+						>
+							<span class="avatar">{initial(p.name)}</span>
+							<span class="picker-main">
+								<span class="picker-name">{p.name}</span>
+								<span class="picker-identity">{p.identity ?? 'no identity'}</span>
+								{#if p.description}
+									<span class="picker-desc">
+										{p.description.length > 120 ? p.description.slice(0, 120) + '…' : p.description}
+									</span>
+								{/if}
+							</span>
+							{#if selectedId === p.id}
+								<span class="picker-check" aria-hidden="true">✓</span>
+							{/if}
+						</button>
+					{/each}
+				</div>
+				{#if submitError}
+					<p class="error" role="alert" style="margin-top: 1rem">{submitError}</p>
+				{/if}
+				<div class="auth-foot">
+					<a href="/personas">Manage personas</a>
+				</div>
+			{/if}
 		{/if}
-		<p class="manage"><a href="/personas">Manage personas</a></p>
-	{/if}
-{/if}
+	</div>
+</div>
 
 <style>
-	.subtext {
-		color: #9aa0ac;
-		font-size: 0.95rem;
-		margin: 0 0 1.25rem;
-	}
 	.list {
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
+		gap: 0.6rem;
 	}
-	.card {
+	.picker {
 		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
+		align-items: center;
+		gap: 0.85rem;
 		width: 100%;
 		text-align: left;
-		background: #1a1d24;
-		border: 1px solid #2a2e38;
-		border-radius: 8px;
-		padding: 1rem;
-		color: #e6e8ee;
+		background: var(--surface-2);
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+		padding: 0.85rem 1rem;
+		color: var(--text);
 		cursor: pointer;
 		font: inherit;
+		transition:
+			border-color var(--speed) ease,
+			background-color var(--speed) ease,
+			box-shadow var(--speed) ease;
 	}
-	.card:hover {
-		border-color: #5b7cff;
+	.picker:hover:not(:disabled) {
+		border-color: var(--primary);
+		box-shadow: var(--shadow-sm);
 	}
-	.card.selected {
-		border-color: #5b7cff;
-		background: #1f2330;
+	.picker.selected {
+		border-color: var(--primary);
+		background: var(--primary-soft);
 	}
-	.card:disabled {
-		opacity: 0.5;
+	.picker:disabled {
+		opacity: 0.6;
 		cursor: not-allowed;
 	}
-	.name {
-		font-size: 1.1rem;
+	.picker-main {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+		flex: 1;
+	}
+	.picker-name {
 		font-weight: 600;
+		font-size: 1rem;
 	}
-	.identity {
-		color: #9aa0ac;
-		font-size: 0.9rem;
+	.picker-identity {
+		color: var(--text-muted);
+		font-size: 0.875rem;
 	}
-	.desc {
-		font-size: 0.9rem;
-		color: #c9ccd6;
-		margin-top: 0.25rem;
+	.picker-desc {
+		color: var(--text-faint);
+		font-size: 0.825rem;
+		margin-top: 0.15rem;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+		-webkit-box-orient: vertical;
 	}
-	.error {
-		color: #ff6b6b;
-		font-size: 0.9rem;
-		margin: 1rem 0 0;
-	}
-	.muted {
-		color: #9aa0ac;
-	}
-	.manage {
-		margin-top: 1.25rem;
-		font-size: 0.9rem;
-	}
-	.manage a {
-		color: #5b7cff;
+	.picker-check {
+		color: var(--primary);
+		font-weight: 700;
+		font-size: 1.1rem;
 	}
 </style>

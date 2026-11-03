@@ -70,68 +70,70 @@
 	}
 </script>
 
-<h1>Forgot password</h1>
+<div class="auth">
+	<div class="auth-card">
+		<h1>Forgot password</h1>
 
-{#if success}
-	<p class="success">Password reset. You can now log in.</p>
-	<p class="muted"><a href="/login">Go to login</a></p>
-{:else if step === 1}
-	<form onsubmit={submitStep1}>
-		<FormField id="username" label="Username" bind:value={username} error={errors.username} autocomplete="username" />
-		{#if serverError}
-			<p class="error" role="alert">{serverError}</p>
+		{#if success}
+			<p class="success">Password reset. You can now log in.</p>
+			<div class="auth-foot">
+				<a href="/login">Go to login</a>
+			</div>
+		{:else if step === 1}
+			<p class="sub">Reset it with one of your recovery codes.</p>
+			<form onsubmit={submitStep1}>
+				<FormField
+					id="username"
+					label="Username"
+					bind:value={username}
+					error={errors.username}
+					autocomplete="username"
+				/>
+				{#if serverError}
+					<p class="error" role="alert">{serverError}</p>
+				{/if}
+				<button type="submit" class="btn btn-primary btn-block" disabled={submitting}>
+					{submitting ? 'Sending…' : 'Continue'}
+				</button>
+			</form>
+			<div class="auth-foot">
+				<a href="/login">Back to login</a>
+			</div>
+		{:else}
+			<p class="sub">Enter a recovery code and choose a new password.</p>
+			<form onsubmit={submitStep2}>
+				<FormField
+					id="recoveryCode"
+					label="Recovery code"
+					bind:value={recoveryCode}
+					error={errors.recoveryCode}
+				/>
+				<FormField
+					id="newPassword"
+					label="New password"
+					type="password"
+					bind:value={newPassword}
+					error={errors.newPassword}
+					autocomplete="new-password"
+				/>
+				<FormField
+					id="confirm"
+					label="Confirm new password"
+					type="password"
+					bind:value={confirm}
+					error={errors.confirm}
+					autocomplete="new-password"
+				/>
+				{#if serverError}
+					<p class="error" role="alert">{serverError}</p>
+				{/if}
+				<button type="submit" class="btn btn-primary btn-block" disabled={submitting}>
+					{submitting ? 'Resetting…' : 'Reset password'}
+				</button>
+			</form>
+			<div class="auth-foot">
+				<a href="/login">Back to login</a>
+			</div>
 		{/if}
-		<button type="submit" class="primary" disabled={submitting}>
-			{submitting ? 'Sending…' : 'Continue'}
-		</button>
-	</form>
-{:else}
-	<form onsubmit={submitStep2}>
-		<FormField id="recoveryCode" label="Recovery code" bind:value={recoveryCode} error={errors.recoveryCode} />
-		<FormField id="newPassword" label="New password" type="password" bind:value={newPassword} error={errors.newPassword} autocomplete="new-password" />
-		<FormField id="confirm" label="Confirm new password" type="password" bind:value={confirm} error={errors.confirm} autocomplete="new-password" />
-		{#if serverError}
-			<p class="error" role="alert">{serverError}</p>
-		{/if}
-		<button type="submit" class="primary" disabled={submitting}>
-			{submitting ? 'Resetting…' : 'Reset password'}
-		</button>
-	</form>
-{/if}
-
-<style>
-	form {
-		display: flex;
-		flex-direction: column;
-	}
-	.primary {
-		background: #5b7cff;
-		color: #fff;
-		border: none;
-		border-radius: 6px;
-		padding: 0.65rem 1rem;
-		font-size: 1rem;
-		cursor: pointer;
-		margin-top: 0.5rem;
-	}
-	.primary:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-	.error {
-		color: #ff6b6b;
-		font-size: 0.9rem;
-		margin: 0 0 1rem;
-	}
-	.success {
-		color: #4ade80;
-	}
-	.muted {
-		color: #9aa0ac;
-		font-size: 0.9rem;
-		margin-top: 1rem;
-	}
-	.muted a {
-		color: #5b7cff;
-	}
-</style>
+	</div>
+</div>

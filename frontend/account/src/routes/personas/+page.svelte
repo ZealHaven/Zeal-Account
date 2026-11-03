@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
 	import { api, ApiError, redirectIfLoggedOut } from '../../lib/api';
 	import type { PersonasResponse, Persona } from '../../lib/types';
 
@@ -30,90 +29,88 @@
 			return s;
 		}
 	}
+
+	function initial(name: string): string {
+		return (name.trim()[0] ?? '?').toUpperCase();
+	}
 </script>
 
-<h1>Personas</h1>
+<div class="page-head">
+	<h1>Personas</h1>
+	<a class="btn btn-primary" href="/personas/new">New persona</a>
+</div>
 
 {#if loading}
-	<p>Loading…</p>
+	<p class="muted">Loading…</p>
 {:else if error}
 	<p class="error">{error}</p>
-{:else}
-	<div class="toolbar">
-		<button type="button" class="primary" onclick={() => goto('/personas/new')}>New persona</button>
+{:else if personas.length === 0}
+	<div class="empty">
+		<p>No personas yet — a persona is the identity products see.</p>
+		<a class="btn btn-primary" href="/personas/new">Create your first persona</a>
 	</div>
-
-	{#if personas.length === 0}
-		<p class="muted">No personas yet.</p>
-	{:else}
-		<div class="list">
-			{#each personas as p (p.id)}
-				<a class="card" href={`/personas/${p.id}`}>
-					<h2>{p.name}</h2>
-					<p class="identity">{p.identity ?? 'no identity'}</p>
+{:else}
+	<div class="stack">
+		{#each personas as p (p.id)}
+			<a class="card card-hover pcard" href={`/personas/${p.id}`}>
+				<span class="avatar">{initial(p.name)}</span>
+				<span class="pcard-main">
+					<span class="pcard-name">{p.name}</span>
+					<span class="pcard-identity">{p.identity ?? 'no identity'}</span>
 					{#if p.description}
-						<p class="desc">{p.description}</p>
+						<span class="pcard-desc">{p.description}</span>
 					{/if}
-					<p class="meta">Created {formatDate(p.created_at)}</p>
-				</a>
-			{/each}
-		</div>
-	{/if}
+					<span class="pcard-meta">Created {formatDate(p.created_at)}</span>
+				</span>
+				<span class="pcard-chevron" aria-hidden="true">›</span>
+			</a>
+		{/each}
+	</div>
 {/if}
 
 <style>
-	.toolbar {
-		margin-bottom: 1rem;
+	.pcard {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.95rem;
+		padding: 1.1rem 1.2rem;
 	}
-	.primary {
-		background: #5b7cff;
-		color: #fff;
-		border: none;
-		border-radius: 6px;
-		padding: 0.6rem 1rem;
-		font-size: 0.95rem;
-		cursor: pointer;
-	}
-	.list {
+
+	.pcard-main {
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
+		gap: 0.15rem;
+		min-width: 0;
+		flex: 1;
 	}
-	.card {
-		display: block;
-		background: #1a1d24;
-		border: 1px solid #2a2e38;
-		border-radius: 8px;
-		padding: 1rem;
-		text-decoration: none;
-		color: #e6e8ee;
+
+	.pcard-name {
+		font-weight: 600;
+		font-size: 1.05rem;
+		letter-spacing: -0.01em;
 	}
-	.card:hover {
-		border-color: #5b7cff;
-	}
-	.card h2 {
-		margin: 0 0 0.25rem;
-		font-size: 1.1rem;
-	}
-	.identity {
-		color: #9aa0ac;
+
+	.pcard-identity {
+		color: var(--text-muted);
 		font-size: 0.9rem;
-		margin: 0 0 0.5rem;
 	}
-	.desc {
-		font-size: 0.9rem;
-		margin: 0 0 0.5rem;
-		color: #c9ccd6;
+
+	.pcard-desc {
+		color: var(--text-muted);
+		font-size: 0.875rem;
+		margin-top: 0.2rem;
 	}
-	.meta {
-		font-size: 0.8rem;
-		color: #6b7080;
-		margin: 0;
+
+	.pcard-meta {
+		color: var(--text-faint);
+		font-size: 0.775rem;
+		margin-top: 0.35rem;
 	}
-	.error {
-		color: #ff6b6b;
-	}
-	.muted {
-		color: #9aa0ac;
+
+	.pcard-chevron {
+		color: var(--text-faint);
+		font-size: 1.4rem;
+		line-height: 1;
+		align-self: center;
 	}
 </style>

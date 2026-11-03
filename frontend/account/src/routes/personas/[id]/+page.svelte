@@ -153,173 +153,130 @@
 	}
 </script>
 
-{#if loading}
-	<p>Loading…</p>
-{:else if error}
-	<p class="error">{error}</p>
-{:else if notFound}
-	<p class="error">Persona not found.</p>
-	<p><a href="/personas">Back to personas</a></p>
-{:else if persona}
-	<h1>Edit persona</h1>
+<div class="narrow">
+	{#if loading}
+		<p class="muted">Loading…</p>
+	{:else if error}
+		<p class="error">{error}</p>
+	{:else if notFound}
+		<p class="error">Persona not found.</p>
+		<p><a href="/personas">Back to personas</a></p>
+	{:else if persona}
+		<div class="page-head">
+			<h1>Edit persona</h1>
+			<a class="btn btn-ghost btn-sm" href="/personas">← Back</a>
+		</div>
 
-	<div class="id-block">
-		<span class="label">Persona ID</span>
-		<code class="id">{persona.id}</code>
-		<button type="button" class="copy" onclick={copyId}>{copied ? 'Copied!' : 'Copy'}</button>
-		<p class="hint">This is the identity products see. Read-only.</p>
-	</div>
+		<div class="card id-block">
+			<span class="id-label">Persona ID</span>
+			<div class="id-row">
+				<code class="id mono">{persona.id}</code>
+				<button type="button" class="btn btn-secondary btn-sm" onclick={copyId}>
+					{copied ? 'Copied!' : 'Copy'}
+				</button>
+			</div>
+			<p class="hint" style="margin: 0.5rem 0 0">
+				This is the identity products see. Read-only.
+			</p>
+		</div>
 
-	<form onsubmit={save}>
-		<FormField id="name" label="Name" bind:value={name} />
-		<FormField id="identity" label="Identity" bind:value={identity} placeholder="email, phone, handle…" />
-		<FormField id="description" label="Description" textarea bind:value={description} rows={3} />
-		{#if saveError}
-			<p class="error" role="alert">{saveError}</p>
-		{/if}
-		{#if saved}
-			<p class="success">Saved</p>
-		{/if}
-		<button type="submit" class="primary" disabled={saving}>
-			{saving ? 'Saving…' : 'Save changes'}
-		</button>
-	</form>
-
-	{#if persona.identity}
-		<section class="identity-section">
-			<h2>Identity</h2>
-			<p class="identity-value">{persona.identity}</p>
-			{#if identityVerified}
-				<p class="success">
-					Identity verified.
-					{#if confirmResult && confirmResult.evicted_accounts > 0}
-						Removed from {confirmResult.cleared_personas} of your other personas.
-					{/if}
-				</p>
-			{:else if codeRequested}
-				<p class="hint">Code sent to {persona.identity}. Expires in 15 min.</p>
-				<FormField id="code" label="Verification code" bind:value={code} error={codeError} />
-				{#if verifyError}
-					<p class="error" role="alert">{verifyError}</p>
+		<div class="card" style="margin-top: 1rem">
+			<h2>Profile</h2>
+			<form onsubmit={save}>
+				<FormField id="name" label="Name" bind:value={name} />
+				<FormField
+					id="identity"
+					label="Identity"
+					bind:value={identity}
+					placeholder="email, phone, handle…"
+				/>
+				<FormField id="description" label="Description" textarea bind:value={description} rows={3} />
+				{#if saveError}
+					<p class="error" role="alert">{saveError}</p>
 				{/if}
-				<div class="row">
-					<button type="button" class="primary" disabled={confirming} onclick={confirmCode}>
-						{confirming ? 'Confirming…' : 'Confirm'}
-					</button>
-					<button type="button" class="link" disabled={verifyLoading} onclick={requestVerify}>
-						{verifyLoading ? 'Sending…' : 'Resend code'}
+				{#if saved}
+					<p class="success">Saved</p>
+				{/if}
+				<div class="btn-row">
+					<button type="submit" class="btn btn-primary" disabled={saving}>
+						{saving ? 'Saving…' : 'Save changes'}
 					</button>
 				</div>
-			{:else}
-				{#if verifyError}
-					<p class="error" role="alert">{verifyError}</p>
+			</form>
+		</div>
+
+		{#if persona.identity}
+			<div class="card" style="margin-top: 1rem">
+				<h2>Identity</h2>
+				<p class="identity-value mono">{persona.identity}</p>
+				{#if identityVerified}
+					<p class="success">
+						Identity verified.
+						{#if confirmResult && confirmResult.evicted_accounts > 0}
+							Removed from {confirmResult.cleared_personas} of your other personas.
+						{/if}
+					</p>
+				{:else if codeRequested}
+					<p class="hint" style="margin-bottom: 0.75rem">
+						Code sent to {persona.identity}. Expires in 15 min.
+					</p>
+					<FormField id="code" label="Verification code" bind:value={code} error={codeError} />
+					{#if verifyError}
+						<p class="error" role="alert">{verifyError}</p>
+					{/if}
+					<div class="btn-row">
+						<button type="button" class="btn btn-primary" disabled={confirming} onclick={confirmCode}>
+							{confirming ? 'Confirming…' : 'Confirm'}
+						</button>
+						<button type="button" class="btn btn-ghost" disabled={verifyLoading} onclick={requestVerify}>
+							{verifyLoading ? 'Sending…' : 'Resend code'}
+						</button>
+					</div>
+				{:else}
+					{#if verifyError}
+						<p class="error" role="alert">{verifyError}</p>
+					{/if}
+					<div class="btn-row">
+						<button type="button" class="btn btn-primary" disabled={verifyLoading} onclick={requestVerify}>
+							{verifyLoading ? 'Sending…' : 'Verify identity'}
+						</button>
+					</div>
 				{/if}
-				<button type="button" class="primary" disabled={verifyLoading} onclick={requestVerify}>
-					{verifyLoading ? 'Sending…' : 'Verify'}
-				</button>
-			{/if}
-		</section>
+			</div>
+		{/if}
 	{/if}
-{/if}
+</div>
 
 <style>
 	.id-block {
-		background: #1a1d24;
-		border: 1px solid #2a2e38;
-		border-radius: 8px;
-		padding: 0.75rem 1rem;
-		margin-bottom: 1.5rem;
+		background: var(--surface);
 	}
-	.label {
+	.id-label {
 		display: block;
 		font-size: 0.8rem;
-		color: #9aa0ac;
-		margin-bottom: 0.25rem;
+		font-weight: 500;
+		color: var(--text-muted);
+		margin-bottom: 0.4rem;
 	}
-	.id {
-		font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-		font-size: 0.9rem;
-		word-break: break-all;
-	}
-	.copy {
-		margin-left: 0.5rem;
-		background: #2a2e38;
-		color: #e6e8ee;
-		border: 1px solid #3a3e48;
-		border-radius: 6px;
-		padding: 0.25rem 0.6rem;
-		cursor: pointer;
-		font-size: 0.8rem;
-	}
-	.hint {
-		font-size: 0.8rem;
-		color: #6b7080;
-		margin: 0.5rem 0 0;
-	}
-	form {
-		display: flex;
-		flex-direction: column;
-	}
-	.primary {
-		background: #5b7cff;
-		color: #fff;
-		border: none;
-		border-radius: 6px;
-		padding: 0.65rem 1rem;
-		font-size: 1rem;
-		cursor: pointer;
-		margin-top: 0.5rem;
-	}
-	.primary:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-	.error {
-		color: #ff6b6b;
-		font-size: 0.9rem;
-		margin: 0 0 1rem;
-	}
-	.success {
-		color: #4ade80;
-		font-size: 0.9rem;
-		margin: 0 0 1rem;
-	}
-	.identity-section {
-		margin-top: 1.5rem;
-		padding-top: 1.5rem;
-		border-top: 1px solid #2a2e38;
-	}
-	.identity-section h2 {
-		font-size: 1rem;
-		margin: 0 0 0.5rem;
-	}
-	.identity-value {
-		color: #9aa0ac;
-		font-size: 0.9rem;
-		margin: 0 0 0.75rem;
-		word-break: break-all;
-	}
-	.hint {
-		font-size: 0.85rem;
-		color: #6b7080;
-		margin: 0 0 0.75rem;
-	}
-	.row {
+	.id-row {
 		display: flex;
 		align-items: center;
-		gap: 0.75rem;
-		margin-top: 0.5rem;
+		gap: 0.6rem;
+		flex-wrap: wrap;
 	}
-	.link {
-		background: none;
-		border: none;
-		color: #5b7cff;
-		cursor: pointer;
+	.id {
+		font-size: 0.875rem;
+		word-break: break-all;
+		color: var(--text);
+		background: var(--code-bg);
+		border: 1px solid var(--border);
+		border-radius: var(--radius-sm);
+		padding: 0.35rem 0.55rem;
+	}
+	.identity-value {
+		color: var(--text-muted);
 		font-size: 0.9rem;
-		padding: 0;
-	}
-	.link:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
+		margin: 0 0 0.75rem;
+		word-break: break-all;
 	}
 </style>

@@ -103,16 +103,14 @@
 <div class="bell-wrap" bind:this={container}>
 	<button
 		type="button"
-		class="bell"
+		class="icon-btn bell"
 		aria-label="Notifications"
 		aria-expanded={open}
 		onclick={toggle}
 	>
-		<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-			<path
-				d="M12 3a6 6 0 0 0-6 6v3.5L4.5 15h15L18 12.5V9a6 6 0 0 0-6-6Zm0 18a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 21Z"
-				fill="currentColor"
-			/>
+		<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+			<path d="M10.268 21a2 2 0 0 0 3.464 0" />
+			<path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" />
 		</svg>
 		{#if count > 0}
 			<span class="badge">{badgeLabel}</span>
@@ -133,11 +131,11 @@
 				</button>
 			</div>
 			{#if loading}
-				<p class="muted">Loading…</p>
+				<p class="muted" style="margin: 0.5rem 0">Loading…</p>
 			{:else if error}
-				<p class="error">{error}</p>
+				<p class="error" style="margin: 0.5rem 0; font-size: 0.85rem">{error}</p>
 			{:else if items.length === 0}
-				<p class="muted">No notifications yet.</p>
+				<p class="muted" style="margin: 0.5rem 0">No notifications yet.</p>
 			{:else}
 				<ul class="list">
 					{#each items as n (n.id)}
@@ -148,11 +146,11 @@
 								class:unread={!n.read_at}
 								onclick={() => onItemClick(n)}
 							>
-								<div class="item-top">
+								<span class="item-top">
 									<span class="item-title">{n.title}</span>
 									<span class="item-time">{timeAgo(n.created_at)}</span>
-								</div>
-								<p class="item-body">{n.body}</p>
+								</span>
+								<span class="item-body">{n.body}</span>
 							</button>
 						</li>
 					{/each}
@@ -170,28 +168,16 @@
 		position: relative;
 	}
 	.bell {
-		background: #2a2e38;
-		color: #e6e8ee;
-		border: 1px solid #3a3e48;
-		border-radius: 6px;
-		padding: 0.4rem 0.5rem;
-		cursor: pointer;
-		position: relative;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-	}
-	.bell:hover {
-		background: #3a3e48;
+		padding: 0.45rem 0.55rem;
 	}
 	.badge {
 		position: absolute;
 		top: -6px;
 		right: -6px;
-		background: #ff6b6b;
+		background: var(--error);
 		color: #fff;
-		font-size: 0.7rem;
-		font-weight: 600;
+		font-size: 0.68rem;
+		font-weight: 700;
 		min-width: 16px;
 		height: 16px;
 		padding: 0 4px;
@@ -199,25 +185,26 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
+		border: 2px solid var(--bg);
 	}
 	.panel {
 		position: absolute;
 		right: 0;
-		top: calc(100% + 0.5rem);
-		width: 20rem;
+		top: calc(100% + 0.6rem);
+		width: 21rem;
 		max-width: 90vw;
-		background: #1a1d24;
-		border: 1px solid #2a2e38;
-		border-radius: 8px;
-		padding: 0.75rem;
+		background: var(--surface);
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+		padding: 0.85rem;
 		z-index: 50;
-		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+		box-shadow: var(--shadow-lg);
 	}
 	.panel-header {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		margin-bottom: 0.5rem;
+		margin-bottom: 0.6rem;
 	}
 	.panel-title {
 		font-weight: 600;
@@ -226,14 +213,19 @@
 	.link-btn {
 		background: none;
 		border: none;
-		color: #5b7cff;
+		color: var(--link);
 		cursor: pointer;
 		font-size: 0.8rem;
 		padding: 0;
+		font-family: inherit;
+	}
+	.link-btn:hover {
+		text-decoration: underline;
 	}
 	.link-btn:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
+		text-decoration: none;
 	}
 	.list {
 		list-style: none;
@@ -250,19 +242,21 @@
 		text-align: left;
 		background: transparent;
 		border: none;
-		color: #e6e8ee;
-		padding: 0.5rem;
-		border-radius: 6px;
+		color: var(--text);
+		padding: 0.55rem 0.6rem;
+		border-radius: var(--radius-sm);
 		cursor: pointer;
 		display: flex;
 		flex-direction: column;
-		gap: 0.25rem;
+		gap: 0.2rem;
+		font: inherit;
+		transition: background-color var(--speed) ease;
 	}
 	.item:hover {
-		background: #2a2e38;
+		background: var(--surface-3);
 	}
 	.item.unread {
-		background: #1f2330;
+		background: var(--primary-soft);
 	}
 	.item-top {
 		display: flex;
@@ -271,38 +265,32 @@
 		align-items: baseline;
 	}
 	.item-title {
-		font-size: 0.9rem;
+		font-size: 0.875rem;
 		font-weight: 600;
 	}
 	.item-time {
-		font-size: 0.75rem;
-		color: #6b7080;
+		font-size: 0.72rem;
+		color: var(--text-faint);
 		white-space: nowrap;
 	}
 	.item-body {
 		font-size: 0.8rem;
-		color: #c9ccd6;
+		color: var(--text-muted);
 		margin: 0;
 	}
-	.muted {
-		color: #9aa0ac;
-		font-size: 0.9rem;
-		margin: 0.5rem 0;
-	}
-	.error {
-		color: #ff6b6b;
-		font-size: 0.9rem;
-		margin: 0.5rem 0;
-	}
 	.panel-footer {
-		margin-top: 0.5rem;
-		padding-top: 0.5rem;
-		border-top: 1px solid #2a2e38;
+		margin-top: 0.6rem;
+		padding-top: 0.6rem;
+		background: linear-gradient(90deg, transparent, var(--border) 12%, var(--border) 88%, transparent)
+			top / 100% 1px no-repeat;
 		text-align: right;
 	}
 	.panel-footer a {
-		color: #5b7cff;
+		color: var(--link);
 		font-size: 0.85rem;
 		text-decoration: none;
+	}
+	.panel-footer a:hover {
+		text-decoration: underline;
 	}
 </style>

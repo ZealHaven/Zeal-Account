@@ -41,47 +41,31 @@
 	}
 </script>
 
-<h1>Create your first persona</h1>
-<p class="muted">A persona is the identity products see. You can create more later.</p>
-<form onsubmit={submit}>
-	<FormField id="name" label="Name" bind:value={name} error={errors.name} />
-	<FormField id="identity" label="Identity (optional)" bind:value={identity} placeholder="email, phone, handle…" />
-	<FormField id="description" label="Description (optional)" textarea bind:value={description} rows={3} />
-	{#if serverError}
-		<p class="error" role="alert">{serverError}</p>
-	{/if}
-	<button type="submit" class="primary" disabled={submitting}>
-		{submitting ? 'Creating…' : 'Create persona'}
-	</button>
-</form>
-
-<style>
-	form {
-		display: flex;
-		flex-direction: column;
-	}
-	.primary {
-		background: #5b7cff;
-		color: #fff;
-		border: none;
-		border-radius: 6px;
-		padding: 0.65rem 1rem;
-		font-size: 1rem;
-		cursor: pointer;
-		margin-top: 0.5rem;
-	}
-	.primary:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-	.error {
-		color: #ff6b6b;
-		font-size: 0.9rem;
-		margin: 0 0 1rem;
-	}
-	.muted {
-		color: #9aa0ac;
-		font-size: 0.9rem;
-		margin-bottom: 1rem;
-	}
-</style>
+<div class="auth">
+	<div class="auth-card">
+		<h1>Create your first persona</h1>
+		<p class="sub">A persona is the identity products see. You can create more later.</p>
+		<form onsubmit={submit}>
+			<FormField id="name" label="Name" bind:value={name} error={errors.name} />
+			<FormField
+				id="identity"
+				label="Identity (optional)"
+				bind:value={identity}
+				placeholder="email, phone, handle…"
+			/>
+			<FormField
+				id="description"
+				label="Description (optional)"
+				textarea
+				bind:value={description}
+				rows={3}
+			/>
+			{#if serverError}
+				<p class="error" role="alert">{serverError}</p>
+			{/if}
+			<button type="submit" class="btn btn-primary btn-block" disabled={submitting}>
+				{submitting ? 'Creating…' : 'Create persona'}
+			</button>
+		</form>
+	</div>
+</div>

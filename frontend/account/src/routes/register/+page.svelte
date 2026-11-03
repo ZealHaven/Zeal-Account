@@ -55,65 +55,59 @@
 	}
 </script>
 
-{#if recoveryCodes}
-	<h1>Save your recovery codes</h1>
-	<RecoveryCodes codes={recoveryCodes} bind:acknowledged />
-	<button
-		type="button"
-		class="primary"
-		disabled={!acknowledged}
-		onclick={continueOnboarding}
-	>
-		Continue
-	</button>
-{:else}
-	<h1>Register</h1>
-	<form onsubmit={submit}>
-		<FormField id="username" label="Username" bind:value={username} error={errors.username} autocomplete="username" />
-		<FormField id="password" label="Password" type="password" bind:value={password} error={errors.password} autocomplete="new-password" />
-		<FormField id="confirm" label="Confirm password" type="password" bind:value={confirm} error={errors.confirm} autocomplete="new-password" />
-		{#if serverError}
-			<p class="error" role="alert">{serverError}</p>
+<div class="auth">
+	<div class="auth-card">
+		{#if recoveryCodes}
+			<h1>Save your recovery codes</h1>
+			<p class="sub">Ten one-time codes — each resets your password once.</p>
+			<RecoveryCodes codes={recoveryCodes} bind:acknowledged />
+			<div class="btn-row">
+				<button
+					type="button"
+					class="btn btn-primary btn-block"
+					disabled={!acknowledged}
+					onclick={continueOnboarding}
+				>
+					Continue
+				</button>
+			</div>
+		{:else}
+			<h1>Create account</h1>
+			<p class="sub">Username and password — nothing else.</p>
+			<form onsubmit={submit}>
+				<FormField
+					id="username"
+					label="Username"
+					bind:value={username}
+					error={errors.username}
+					autocomplete="username"
+				/>
+				<FormField
+					id="password"
+					label="Password"
+					type="password"
+					bind:value={password}
+					error={errors.password}
+					autocomplete="new-password"
+				/>
+				<FormField
+					id="confirm"
+					label="Confirm password"
+					type="password"
+					bind:value={confirm}
+					error={errors.confirm}
+					autocomplete="new-password"
+				/>
+				{#if serverError}
+					<p class="error" role="alert">{serverError}</p>
+				{/if}
+				<button type="submit" class="btn btn-primary btn-block" disabled={submitting}>
+					{submitting ? 'Creating…' : 'Create account'}
+				</button>
+			</form>
+			<div class="auth-foot">
+				<span>Already have an account? <a href="/login">Log in</a></span>
+			</div>
 		{/if}
-		<button type="submit" class="primary" disabled={submitting}>
-			{submitting ? 'Creating…' : 'Create account'}
-		</button>
-	</form>
-	<p class="muted">
-		Already have an account? <a href="/login">Log in</a>
-	</p>
-{/if}
-
-<style>
-	form {
-		display: flex;
-		flex-direction: column;
-	}
-	.primary {
-		background: #5b7cff;
-		color: #fff;
-		border: none;
-		border-radius: 6px;
-		padding: 0.65rem 1rem;
-		font-size: 1rem;
-		cursor: pointer;
-		margin-top: 0.5rem;
-	}
-	.primary:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-	.error {
-		color: #ff6b6b;
-		font-size: 0.9rem;
-		margin: 0 0 1rem;
-	}
-	.muted {
-		color: #9aa0ac;
-		font-size: 0.9rem;
-		margin-top: 1rem;
-	}
-	.muted a {
-		color: #5b7cff;
-	}
-</style>
+	</div>
+</div>

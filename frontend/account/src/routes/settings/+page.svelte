@@ -132,105 +132,101 @@
 	}
 </script>
 
-{#if loading}
-	<p>Loading…</p>
-{:else if loadError}
-	<p class="error">{loadError}</p>
-{:else}
-	<h1>Settings</h1>
+<div class="narrow">
+	{#if loading}
+		<p class="muted">Loading…</p>
+	{:else if loadError}
+		<p class="error">{loadError}</p>
+	{:else}
+		<div class="page-head">
+			<h1>Settings</h1>
+		</div>
 
-	<section>
-		<h2>Username</h2>
-		<p class="muted">Current: <strong>{currentUsername}</strong></p>
-		<form onsubmit={saveUsername}>
-			<FormField id="newUsername" label="New username" bind:value={newUsername} error={usernameError} autocomplete="username" />
-			{#if usernameServerError}
-				<p class="error" role="alert">{usernameServerError}</p>
-			{/if}
-			{#if usernameSuccess}
-				<p class="success">{usernameSuccess}</p>
-			{/if}
-			<button type="submit" class="primary" disabled={usernameSaving}>
-				{usernameSaving ? 'Saving…' : 'Update username'}
-			</button>
-		</form>
-	</section>
+		<div class="stack">
+			<section class="card">
+				<h2>Username</h2>
+				<p class="muted" style="margin-bottom: 1rem">
+					Current: <strong>{currentUsername}</strong>
+				</p>
+				<form onsubmit={saveUsername}>
+					<FormField
+						id="newUsername"
+						label="New username"
+						bind:value={newUsername}
+						error={usernameError}
+						autocomplete="username"
+					/>
+					{#if usernameServerError}
+						<p class="error" role="alert">{usernameServerError}</p>
+					{/if}
+					{#if usernameSuccess}
+						<p class="success">{usernameSuccess}</p>
+					{/if}
+					<div class="btn-row" style="margin-top: 0">
+						<button type="submit" class="btn btn-primary" disabled={usernameSaving}>
+							{usernameSaving ? 'Saving…' : 'Update username'}
+						</button>
+					</div>
+				</form>
+			</section>
 
-	<section>
-		<h2>Password</h2>
-		<form onsubmit={savePassword}>
-			<FormField id="currentPassword" label="Current password" type="password" bind:value={currentPassword} error={passwordErrors.current} autocomplete="current-password" />
-			<FormField id="newPassword" label="New password" type="password" bind:value={newPassword} error={passwordErrors.new} autocomplete="new-password" />
-			<FormField id="confirmPassword" label="Confirm new password" type="password" bind:value={confirmPassword} error={passwordErrors.confirm} autocomplete="new-password" />
-			{#if passwordServerError}
-				<p class="error" role="alert">{passwordServerError}</p>
-			{/if}
-			{#if passwordSuccess}
-				<p class="success">{passwordSuccess}</p>
-			{/if}
-			<button type="submit" class="primary" disabled={passwordSaving}>
-				{passwordSaving ? 'Saving…' : 'Update password'}
-			</button>
-		</form>
-	</section>
+			<section class="card">
+				<h2>Password</h2>
+				<form onsubmit={savePassword}>
+					<FormField
+						id="currentPassword"
+						label="Current password"
+						type="password"
+						bind:value={currentPassword}
+						error={passwordErrors.current}
+						autocomplete="current-password"
+					/>
+					<FormField
+						id="newPassword"
+						label="New password"
+						type="password"
+						bind:value={newPassword}
+						error={passwordErrors.new}
+						autocomplete="new-password"
+					/>
+					<FormField
+						id="confirmPassword"
+						label="Confirm new password"
+						type="password"
+						bind:value={confirmPassword}
+						error={passwordErrors.confirm}
+						autocomplete="new-password"
+					/>
+					{#if passwordServerError}
+						<p class="error" role="alert">{passwordServerError}</p>
+					{/if}
+					{#if passwordSuccess}
+						<p class="success">{passwordSuccess}</p>
+					{/if}
+					<div class="btn-row" style="margin-top: 0">
+						<button type="submit" class="btn btn-primary" disabled={passwordSaving}>
+							{passwordSaving ? 'Saving…' : 'Update password'}
+						</button>
+					</div>
+				</form>
+			</section>
 
-	<section>
-		<h2>Recovery codes</h2>
-		<p class="muted">Regenerating invalidates all previous codes.</p>
-		{#if regenError}
-			<p class="error" role="alert">{regenError}</p>
-		{/if}
-		{#if regenCodes}
-			<RecoveryCodes codes={regenCodes} bind:acknowledged={regenAcknowledged} />
-		{:else}
-			<button type="button" class="primary" disabled={regenLoading} onclick={regenerate}>
-				{regenLoading ? 'Regenerating…' : 'Regenerate recovery codes'}
-			</button>
-		{/if}
-	</section>
-{/if}
-
-<style>
-	section {
-		margin-bottom: 2rem;
-		padding-bottom: 1.5rem;
-		border-bottom: 1px solid #2a2e38;
-	}
-	section:last-child {
-		border-bottom: none;
-	}
-	form {
-		display: flex;
-		flex-direction: column;
-	}
-	.primary {
-		background: #5b7cff;
-		color: #fff;
-		border: none;
-		border-radius: 6px;
-		padding: 0.65rem 1rem;
-		font-size: 1rem;
-		cursor: pointer;
-		margin-top: 0.5rem;
-		align-self: flex-start;
-	}
-	.primary:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-	.error {
-		color: #ff6b6b;
-		font-size: 0.9rem;
-		margin: 0 0 1rem;
-	}
-	.success {
-		color: #4ade80;
-		font-size: 0.9rem;
-		margin: 0 0 1rem;
-	}
-	.muted {
-		color: #9aa0ac;
-		font-size: 0.9rem;
-		margin-bottom: 1rem;
-	}
-</style>
+			<section class="card">
+				<h2>Recovery codes</h2>
+				<p class="muted">Regenerating invalidates all previous codes.</p>
+				{#if regenError}
+					<p class="error" role="alert">{regenError}</p>
+				{/if}
+				{#if regenCodes}
+					<RecoveryCodes codes={regenCodes} bind:acknowledged={regenAcknowledged} />
+				{:else}
+					<div class="btn-row" style="margin-top: 0">
+						<button type="button" class="btn btn-primary" disabled={regenLoading} onclick={regenerate}>
+							{regenLoading ? 'Regenerating…' : 'Regenerate recovery codes'}
+						</button>
+					</div>
+				{/if}
+			</section>
+		</div>
+	{/if}
+</div>
