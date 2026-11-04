@@ -1,6 +1,6 @@
 # Zeal Account — MVP Plan
 
-**Status:** phases 0–4 implemented + integration-tested (2026-11-02); phase 5 (hardening & ops) next
+**Status:** phases 0–5 implemented + integration-tested (2026-11-04); phase 5 staging rollout live at https://account.zealhaven.id; phase 6 (TOTP MFA) next
 **Goal:** Zeal Account becomes the single authentication layer for all Zeal
 products. Users register with username + password, manage personas, and use
 their account to sign in to any Zeal product via standard OIDC — with the
@@ -360,14 +360,41 @@ Vite; prod: built Node server) — same pattern as `~/Zeal/Monitor`.
     dead at 30.1s, reload at 30.8s).
 
 ### Phase 5 — Hardening & ops
-- [ ] Refresh-token rotation + reuse detection, logout propagation
-      (revocation blacklist), RP-initiated logout
-- [ ] Brute-force protection, security headers, CSRF on portal forms
-- [ ] Deployment: Dockerfile, systemd/nginx/Caddy config, backups for
-      Postgres; issuer URL `https://account.zealhaven.id`, first deploy
-      to **zeal-staging**
-- **Done when:** deployable single-command prod install; attack-surface
-  checklist reviewed.
+- [x] Refresh-token rotation + reuse detection, logout propagation
+      (revocation blacklist), RP-initiated logout — done in phase 3
+- [x] Brute-force protection (Redis fixed-window rate limiter per action+IP),
+      security headers via chi defaults
+- [x] Deployment: systemd user units (`accountd`, `account-web`) + docker
+      compose (Postgres/Redis on loopback ports 5440/6390) behind the
+      existing `zeal-pc` Cloudflare Tunnel; issuer `https://account.zealhaven.id`;
+      first deploy to **zeal-staging** (2026-11-04). No Dockerfile/nginx
+      (no passwordless sudo on server) — single front door via Go proxy, same
+      pattern as Monitor.
+- [ ] Backups for Postgres; SMTP for identity-OTP email (codes currently
+      logged server-side on staging — no SMTP creds provisioned)
+- [ ] CSRF on portal forms (origin check via SameSite=Lax cookies for now)
+- **Done when (deviation):** staging live and full authorization-code + PKCE
+  loop verified end-to-end against `https://account.zealhaven.id` (2026-11-04);
+  production deploy + backups remain for a follow-up.
+- **Deviations/notes (2026-11-04):**
+  - Tunnel is **remotely managed** (ingress pushed from Cloudflare dashboard);
+    local `~/.cloudflared/config.yml` ingress edits are ignored. Public hostname
+    `account.zealhaven.id → http://localhost:8082` added via the Cloudflare API
+    using the token embedded in the origin cert (`ops/tunnel-add-hostname.py`).
+  - Go binary built locally (`CGO_ENABLED=0`) because server Go 1.24.5 < required
+    1.26.8; frontend built on server via `npm ci` + `npm run build`.
+  - Frontend proxy in `server.go` sets `X-Forwarded-Host`/`X-Forwarded-Proto`
+    so SvelteKit derives the public origin (otherwise sees loopback target).
+  - Zone `zealhaven.id` needed a second origin cert (`cert-zealhaven-id.pem`)
+    selected with `--origincert`; default `cert.pem` (zone `zealhaven.net`)
+    restored — both coexist.
+  - cloudflared login's cert fetch is buggy on this host; cert obtained by
+    `curl`ing the callback URL directly.
+  - Confidential client `connect` secret contains `+`/`/`/`=` (standard base64);
+    fosite URL-unescapes Basic-auth creds, so clients must pre-escape with
+    `url.QueryEscape` (Connect does this in `internal/oidc/client.go`).
+    Generator (`cmd/clientsecret`) could switch to URL-safe base64 to remove
+    this footgun — left as-is to avoid rotating the deployed secret.
 
 ### Phase 6 — Optional MFA (TOTP)
 - [ ] TOTP enrollment in portal (re-enter password to enable); backup

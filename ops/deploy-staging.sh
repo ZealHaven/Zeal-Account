@@ -39,6 +39,7 @@ rsync -a --delete \
     ./ "$HOST:$REMOTE/"
 
 echo "==> [4/5] sync binary"
+ssh "$HOST" "mkdir -p '$REMOTE/bin'"
 rsync -a bin/accountd "$HOST:$REMOTE/bin/accountd"
 
 echo "==> [5/5] remote: infra, secrets, build, migrations, services"
