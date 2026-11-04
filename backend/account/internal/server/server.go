@@ -120,7 +120,7 @@ func New(d Deps) (http.Handler, error) {
 
 	// --- Frontend (everything else) ----------------------------------------
 	if d.FrontendURL != "" {
-		proxy, err := newFrontendProxy(d.FrontendURL)
+		proxy, err := newFrontendProxy(d.FrontendURL, d.Secure)
 		if err != nil {
 			return nil, err
 		}
@@ -135,7 +135,7 @@ func New(d Deps) (http.Handler, error) {
 
 // newFrontendProxy reverse-proxies non-API routes to the SvelteKit server
 // (Vite dev server in dev, built Node server in prod).
-func newFrontendProxy(target string) (http.Handler, error) {
+func newFrontendProxy(target string, secure bool) (http.Handler, error) {
 	u, err := url.Parse(target)
 	if err != nil {
 		return nil, err
@@ -143,7 +143,19 @@ func newFrontendProxy(target string) (http.Handler, error) {
 	p := httputil.NewSingleHostReverseProxy(u)
 	original := p.Director
 	p.Director = func(r *http.Request) {
+		// Keep the browser-facing origin: Host is rewritten to the
+		// loopback target, but the app behind us (SvelteKit) derives its
+		// self-origin — CSRF checks and absolute URLs — from the
+		// X-Forwarded-* headers. Proto follows the cookie scheme
+		// (COOKIE_SECURE): the public front door terminates TLS.
+		fwdHost := r.Host
 		original(r)
+		r.Header.Set("X-Forwarded-Host", fwdHost)
+		if secure {
+			r.Header.Set("X-Forwarded-Proto", "https")
+		} else {
+			r.Header.Set("X-Forwarded-Proto", "http")
+		}
 		r.Host = u.Host
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

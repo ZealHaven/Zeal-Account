@@ -2,7 +2,9 @@ services:
   postgres:
     image: postgres:18-alpine
     ports:
-      - "5440:5432"
+      # Loopback only — the DB is reached by local/dev processes, never
+      # exposed raw on a network (staging runs this compose too).
+      - "127.0.0.1:5440:5432"
     environment:
       POSTGRES_USER: account
       POSTGRES_PASSWORD: account
@@ -18,7 +20,7 @@ services:
   redis:
     image: redis:8-alpine
     ports:
-      - "6390:6379"
+      - "127.0.0.1:6390:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 2s

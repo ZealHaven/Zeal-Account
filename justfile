@@ -81,6 +81,21 @@ check-backend:
 check-frontend:
     cd {{frontend_dir}} && npm run check
 
+# --- staging -----------------------------------------------------------------
+
+# Ship to zeal-staging (https://account.zealhaven.id); idempotent.
+# First-time extras (already done): cloudflared ingress + DNS route —
+# see the header of ops/deploy-staging.sh.
+deploy-staging:
+    ops/deploy-staging.sh
+
+# Service status / recent logs on the staging box
+staging-status:
+    ssh zeal-staging 'systemctl --user status accountd account-web --no-pager || true'
+
+staging-logs service="accountd":
+    ssh zeal-staging 'journalctl --user -u {{service}} -n 200 --no-pager'
+
 fmt:
     cd {{backend_dir}} && gofmt -w .
     cd {{frontend_dir}} && npm run format

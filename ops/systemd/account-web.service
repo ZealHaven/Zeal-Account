@@ -1,0 +1,20 @@
+[Unit]
+Description=Zeal Account frontend (SvelteKit SSR, loopback only)
+Documentation=file://%h/Zeal/Account/docs/plans/1-mvp.md
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/Zeal/Account/frontend/account
+Environment=NODE_ENV=production
+Environment=PORT=8083
+Environment=HOST=127.0.0.1
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+# Built by ops/deploy-staging.sh (adapter-node output). accountd proxies
+# every non-API route here; never bind this off loopback.
+ExecStart=/usr/bin/node build
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=default.target

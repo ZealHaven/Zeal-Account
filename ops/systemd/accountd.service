@@ -1,0 +1,17 @@
+[Unit]
+Description=Zeal Account backend (accountd) — API, OIDC, frontend proxy
+Documentation=file://%h/Zeal/Account/docs/plans/1-mvp.md
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/Zeal/Account/backend/account
+# Runtime config incl. secrets (OIDC_ISSUER, KEY_ENC_HEX, DATABASE_URL, …);
+# minted on the server by ops/deploy-staging.sh, never committed.
+EnvironmentFile=%h/Zeal/Account/.env
+ExecStart=%h/Zeal/Account/bin/accountd
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=default.target
