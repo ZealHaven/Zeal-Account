@@ -1,24 +1,27 @@
 #!/usr/bin/env python3
 """Add a public hostname to the remotely-managed cloudflared tunnel.
 
-The `zeal-pc` tunnel is managed from the Cloudflare dashboard (its ingress is
+The tunnel is managed from the Cloudflare dashboard (its ingress is
 pushed to the process and overrides ~/.cloudflared/config.yml), so local edits
 never take effect. This patches the remote tunnel configuration via the API,
 using the API token embedded in the origin certificate written by
 `cloudflared login` (cert-zealhaven-id.pem for zone zealhaven.id).
 
-Usage: tunnel-add-hostname.py HOSTNAME SERVICE [CONFIG_PEM]
-Example: tunnel-add-hostname.py account.zealhaven.id http://localhost:8082
+Usage: TUNNEL_ID=<uuid> tunnel-add-hostname.py HOSTNAME SERVICE [CONFIG_PEM]
+Example: TUNNEL_ID=... tunnel-add-hostname.py account.zealhaven.id http://localhost:8082
 """
 import base64
 import json
+import os
 import re
 import sys
 import urllib.error
 import urllib.request
 
-DEFAULT_PEM = "/home/ridzeal/.cloudflared/cert-zealhaven-id.pem"
-TUNNEL_ID = "fa499c16-92dd-4346-a7b3-f0ffeac2aa71"
+DEFAULT_PEM = os.path.expanduser("~/.cloudflared/cert-zealhaven-id.pem")
+# UUID of the remotely-managed tunnel — infrastructure-specific, kept out
+# of the repo; read it from the Cloudflare dashboard or `cloudflared tunnel list`.
+TUNNEL_ID = os.environ.get("TUNNEL_ID", "")
 
 
 def load_token(pem_path: str) -> tuple[str, str]:
@@ -53,6 +56,8 @@ def api(method: str, url: str, token: str, body: dict | None = None) -> dict:
 def main() -> None:
     if len(sys.argv) < 3:
         sys.exit(__doc__)
+    if not TUNNEL_ID:
+        sys.exit("set TUNNEL_ID (UUID of the remotely-managed tunnel)")
     hostname, service = sys.argv[1], sys.argv[2]
     pem = sys.argv[3] if len(sys.argv) > 3 else DEFAULT_PEM
 

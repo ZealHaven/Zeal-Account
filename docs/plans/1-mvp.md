@@ -20,7 +20,7 @@ their account to sign in to any Zeal product via standard OIDC — with the
 | Notifications | **In-app only** (portal bell: list, unread count, mark read). Events: identity-conflict evictions + security notices (password changed, MFA on/off, recovery codes regenerated). |
 | MFA | **Optional TOTP** (phase 6). A login step-up, not a recovery mechanism. |
 | Persona selection | First authorization shows the picker; the chosen persona becomes the **default** for that client. Portal-side persona changer comes later. |
-| Issuer domain | `https://account.zealhaven.id`. First deployment target: **zeal-staging**. |
+| Issuer domain | `https://account.zealhaven.id`. First deployment target: **staging**. |
 
 ## 1. Requirements
 
@@ -333,7 +333,7 @@ Vite; prod: built Node server) — same pattern as `~/Zeal/Monitor`.
       picker → callback → session on `/setup-key`)
 - **Done when:** one real Zeal product authenticates against Account in a
   staging environment. ⚠️ authenticated in the **local full-stack
-  environment** — the zeal-staging rollout itself is phase 5 scope
+  environment** — the staging rollout itself is phase 5 scope
   (deployment artifacts), verified there when deployed. *(Deviation
   chosen 2026-11-02.)*
 
@@ -366,8 +366,8 @@ Vite; prod: built Node server) — same pattern as `~/Zeal/Monitor`.
       security headers via chi defaults
 - [x] Deployment: systemd user units (`accountd`, `account-web`) + docker
       compose (Postgres/Redis on loopback ports 5440/6390) behind the
-      existing `zeal-pc` Cloudflare Tunnel; issuer `https://account.zealhaven.id`;
-      first deploy to **zeal-staging** (2026-11-04). No Dockerfile/nginx
+      existing Cloudflare Tunnel; issuer `https://account.zealhaven.id`;
+      first deploy to **staging** (2026-11-04). No Dockerfile/nginx
       (no passwordless sudo on server) — single front door via Go proxy, same
       pattern as Monitor.
 - [ ] Backups for Postgres; SMTP for identity-OTP email (codes currently
@@ -445,7 +445,7 @@ Vite; prod: built Node server) — same pattern as `~/Zeal/Monitor`.
    the picker does not run again by default. A persona changer is a
    later portal feature; `prompt=select_account` can force the picker.
 4. **Domain:** issuer is `https://account.zealhaven.id`; first deployment
-   target is **zeal-staging**.
+   target is **staging**.
 5. **Verification channel:** email OTP via SMTP. SMS/phone verification is
    deferred — no SMS provider in MVP.
 6. **Notifications:** in-app only (bell + `/notifications`). Scope:

@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# Deploy Zeal Account to zeal-staging — issuer https://account.zealhaven.id.
+# Deploy Zeal Account to staging — issuer https://account.zealhaven.id.
+#
+# Requires STAGING_HOST (ssh alias of the staging box) and accepts
+# optional STAGING_DIR / STAGING_URL. Set them in .env (git-ignored;
+# `just` exports it) or in the environment — none are stored in the repo.
 #
 # One-time prerequisites (wired manually, kept by the server):
 #   - cloudflared ingress in ~/.cloudflared/config.yml on the server:
@@ -14,8 +18,8 @@ set -euo pipefail
 # Usage: ops/deploy-staging.sh       (or: just deploy-staging)
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-HOST="${STAGING_HOST:-zeal-staging}"
-REMOTE="${STAGING_DIR:-/home/ridzeal/Zeal/Account}"
+HOST="${STAGING_HOST:?set STAGING_HOST (ssh alias of the staging box)}"
+REMOTE="${STAGING_DIR:-$HOME/Zeal/Account}"
 URL="${STAGING_URL:-https://account.zealhaven.id}"
 
 echo "==> [1/5] build backend (static; local Go is newer than the server's)"

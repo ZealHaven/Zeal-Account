@@ -127,9 +127,9 @@ docs/               plans and design notes
 
 Phases 0–5 implemented and integration-tested. **Staging is live** at
 `https://account.zealhaven.id` (issuer `https://account.zealhaven.id`,
-deployed to zeal-staging, 2026-11-04): systemd user units
+deployed to staging, 2026-11-04): systemd user units
 (`accountd`, `account-web`) + docker compose (Postgres/Redis on loopback)
-behind the existing `zeal-pc` Cloudflare Tunnel; PKCE (S256) mandatory,
+behind the existing Cloudflare Tunnel; PKCE (S256) mandatory,
 full authorization-code + PKCE loop verified end-to-end against staging.
 Issuer: `https://account.zealhaven.id`. See
 [`docs/plans/1-mvp.md`](docs/plans/1-mvp.md).

@@ -5,6 +5,8 @@ backend_dir  := "backend/account"
 frontend_dir := "frontend/account"
 bin_dir      := "bin"
 db_url       := env("DATABASE_URL", "postgres://account:account@localhost:5440/account?sslmode=disable")
+# ssh alias of the staging box — set in .env (git-ignored), never committed
+staging_host := env("STAGING_HOST", "staging")
 
 default:
     @just --list
@@ -99,7 +101,8 @@ check-frontend:
 
 # --- staging -----------------------------------------------------------------
 
-# Ship to zeal-staging (https://account.zealhaven.id); idempotent.
+# Ship to staging (https://account.zealhaven.id); idempotent.
+# Requires STAGING_HOST — see the header of ops/deploy-staging.sh.
 # First-time extras (already done): cloudflared ingress + DNS route —
 # see the header of ops/deploy-staging.sh.
 deploy-staging:
@@ -107,10 +110,10 @@ deploy-staging:
 
 # Service status / recent logs on the staging box
 staging-status:
-    ssh zeal-staging 'systemctl --user status accountd account-web --no-pager || true'
+    ssh {{staging_host}} 'systemctl --user status accountd account-web --no-pager || true'
 
 staging-logs service="accountd":
-    ssh zeal-staging 'journalctl --user -u {{service}} -n 200 --no-pager'
+    ssh {{staging_host}} 'journalctl --user -u {{service}} -n 200 --no-pager'
 
 fmt:
     cd {{backend_dir}} && gofmt -w .

@@ -89,4 +89,5 @@ Resolved in `docs/plans/1-mvp.md` §9 — follow these, don't re-litigate:
   picker does not re-run. `prompt=select_account` forces it. Portal-side
   persona changer is a later feature.
 - **Issuer:** `https://account.zealhaven.id`; first deploy target
-  **zeal-staging**.
+  staging (ssh alias comes from `STAGING_HOST` in `.env`, never
+  committed).

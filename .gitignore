@@ -11,3 +11,7 @@ frontend/account/build/
 test-results/
 playwright-report/
 tmp/
+
+# python bytecode (ops scripts)
+__pycache__/
+*.py[cod]
