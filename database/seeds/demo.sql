@@ -27,7 +27,7 @@ ON CONFLICT (client_id, redirect_uri) DO NOTHING;
 -- CREDENTIAL ONLY: never seed production with it. On a DB where the
 -- username already exists the row is left untouched.
 INSERT INTO accounts (username, password_hash)
-VALUES ('ridzeal', '$argon2id$v=19$m=65536,t=3,p=4$ekVpYoAqmm7+Ysda4ThEkw$WNuBYZXnLLVQwA5x4tASIONKYc+5cJ548AvKINKNsAE')
+VALUES ('ridzeal', '$argon2id$v=19$m=65536,t=3,p=4$62h3iH7D02Qsf4X4bTglUQ$nawQ4c17FZBTY+I9esz515J/LCKubnh3Ussy2wJWdDE')
 ON CONFLICT ((lower(username))) DO NOTHING;
 
 COMMIT;
