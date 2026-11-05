@@ -1,0 +1,3 @@
+-- No schema to revert. Seed rows are owned by database/seeds/, not by
+-- migrations: `migrate down` deliberately leaves the `connect` client
+-- (and any other seed data) untouched. Re-run seeds after re-migrating.

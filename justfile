@@ -18,17 +18,32 @@ down:
     docker compose down
 
 # --- migrations --------------------------------------------------------------
+# Schema only — data lives in database/seeds/ (see seeds section below).
 
 migrate-up:
-    migrate -path migrations -database "{{db_url}}" up
+    migrate -path database/migrations -database "{{db_url}}" up
 
 migrate-down:
-    migrate -path migrations -database "{{db_url}}" down 1
+    migrate -path database/migrations -database "{{db_url}}" down 1
 
 migrate-new name:
-    migrate -path migrations -database "{{db_url}}" create -ext sql {{name}}
+    migrate -path database/migrations -database "{{db_url}}" create -ext sql {{name}}
 
-# Fresh OAuth client secret pair: plaintext (product .env) + bcrypt hash (migration)
+# --- seeds -------------------------------------------------------------------
+# Idempotent (ON CONFLICT DO NOTHING) — safe to re-run at any time.
+
+# Master data the app needs to function (all environments, after migrate-up)
+seed-required:
+    psql "{{db_url}}" -v ON_ERROR_STOP=1 -f database/seeds/required.sql
+
+# Demo/test rows — local dev and integration tests only, never production
+seed-demo:
+    psql "{{db_url}}" -v ON_ERROR_STOP=1 -f database/seeds/demo.sql
+
+# Both files (local dev, fresh-DB test runs)
+seed: seed-required seed-demo
+
+# Fresh OAuth client secret pair: plaintext (product .env) + bcrypt hash (seed)
 client-secret:
     cd {{backend_dir}} && go run ./cmd/clientsecret
 
@@ -67,7 +82,8 @@ test:
 test-cover:
     cd {{backend_dir}} && go test -cover ./...
 
-# Full OIDC/API flows against real Postgres + Redis (requires `just up`).
+# Full OIDC/API flows against real Postgres + Redis (requires `just up`,
+# `just migrate-up`, `just seed` — phase 3 needs the zeal-test client).
 # NOTE: tests share the dev DATABASE_URL and rotate signing_keys — after
 # running them, restart `just dev` so the server regenerates its own key.
 test-integration:

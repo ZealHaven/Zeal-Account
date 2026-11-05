@@ -1,5 +1,6 @@
--- OIDC provider storage (phase 3). First-party clients are seeded by
--- migration; dynamic registration is post-MVP.
+-- OIDC provider storage (phase 3). Schema only — OAuth client rows live
+-- in database/seeds/ (migrations never INSERT); dynamic registration is
+-- post-MVP.
 
 CREATE TABLE oauth_clients (
     id            text PRIMARY KEY,
@@ -69,9 +70,5 @@ CREATE TABLE persona_defaults (
     PRIMARY KEY (account_id, client_id)
 );
 
--- Seed a first-party test client (public SPA, PKCE-only).
-INSERT INTO oauth_clients (id, name, scopes, is_public)
-VALUES ('zeal-test', 'Zeal Test App', '{openid,profile,email}', true);
-INSERT INTO oauth_client_redirect_uris (client_id, redirect_uri)
-VALUES ('zeal-test', 'http://127.0.0.1:9999/callback'),
-       ('zeal-test', 'http://localhost:9999/callback');
+-- The `zeal-test` client (public SPA, PKCE-only) that used to be seeded
+-- here moved to database/seeds/demo.sql.

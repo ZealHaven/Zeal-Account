@@ -2,7 +2,8 @@
 
 // End-to-end API tests against real Postgres + Redis.
 // Run with: go test -tags=integration ./...
-// Requires: docker compose up, migrations applied (just up && just migrate-up).
+// Requires: docker compose up, migrations + seeds applied
+// (just up && just migrate-up && just seed).
 package integration_test
 
 import (

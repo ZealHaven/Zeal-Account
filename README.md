@@ -96,8 +96,9 @@ show up there.
 cp .env.example .env
 just up
 
-# 2. Migrate
+# 2. Migrate + seed (schema, then master + demo data)
 just migrate-up
+just seed
 
 # 3. Dev (backend + Vite dev server)
 just dev
@@ -116,7 +117,8 @@ just dev
 ```
 backend/account/    Go service (OIDC provider, account/persona API)
 frontend/account/   SvelteKit app (portal + login/persona UI)
-migrations/         SQL migrations
+database/migrations/ SQL schema migrations (forward-only, no data)
+database/seeds/     seed SQL — required.sql (master) + demo.sql (demo)
 ops/                nginx / systemd / deploy helpers
 docs/               plans and design notes
 ```

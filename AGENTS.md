@@ -38,7 +38,13 @@ the fosite integration).
 - In dev the Go process serves the API and proxies the Vite dev server; in
   production it proxies the built SvelteKit server (single front door,
   same pattern as `~/Zeal/Monitor`).
-- SQL migrations in `migrations/`, plain SQL, numbered, forward-only.
+- SQL schema in `database/migrations/`, plain SQL, numbered,
+  forward-only. Migrations are **schema-only — never INSERT**; data
+  lives in `database/seeds/`: `required.sql` (master rows the app needs
+  to boot, e.g. the `connect` OAuth client) and `demo.sql` (test/demo
+  rows, e.g. the `zeal-test` client). Seeds are idempotent
+  (`ON CONFLICT DO NOTHING`): `just seed-required`, `just seed-demo`,
+  or `just seed` for both; deploys run `just seed-required`.
 - Task runner: `just`. See the `justfile` for canonical commands — prefer
   adding a recipe over inventing ad-hoc commands.
 

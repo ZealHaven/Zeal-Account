@@ -42,7 +42,7 @@ echo "==> [4/5] sync binary"
 ssh "$HOST" "mkdir -p '$REMOTE/bin'"
 rsync -a bin/accountd "$HOST:$REMOTE/bin/accountd"
 
-echo "==> [5/5] remote: infra, secrets, build, migrations, services"
+echo "==> [5/5] remote: infra, secrets, build, migrations, seeds, services"
 ssh "$HOST" "REMOTE='$REMOTE' bash -s" <<'REMOTE'
 set -euo pipefail
 cd "$REMOTE"
@@ -71,7 +71,8 @@ EOF
 fi
 
 just up          # docker compose: postgres + redis on loopback ports
-just migrate-up
+just migrate-up  # schema (forward-only)
+just seed-required # master data (idempotent; migrations never INSERT)
 
 # Frontend deps + production build; npm ci only when the lockfile changed.
 if [ ! -d frontend/account/node_modules ] \

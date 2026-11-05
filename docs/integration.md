@@ -12,17 +12,20 @@ that first integration.
 
 ## 1. Registering your client
 
-Clients are seeded **by migration** (dynamic registration is post-MVP).
-Account ships one forward migration per client, e.g.
-`migrations/000006_connect_client.up.sql`:
+Clients are seeded **by SQL seed files** (dynamic registration is
+post-MVP; migrations are schema-only and never INSERT). Add your client
+to `database/seeds/required.sql` for master data the app needs, or
+`database/seeds/demo.sql` for test/demo-only clients:
 
 ```sql
 INSERT INTO oauth_clients (id, secret_hash, name, scopes, is_public)
-VALUES ('connect', '<BCRYPT HASH>', 'Zeal Connect', '{openid,profile}', false);
+VALUES ('connect', '<BCRYPT HASH>', 'Zeal Connect', '{openid,profile}', false)
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO oauth_client_redirect_uris (client_id, redirect_uri)
 VALUES ('connect', 'http://localhost:8190/auth/callback'),
-       ('connect', 'https://connect.zealhaven.id/auth/callback');
+       ('connect', 'https://connect.zealhaven.id/auth/callback')
+ON CONFLICT (client_id, redirect_uri) DO NOTHING;
 ```
 
 | Field | Notes |
@@ -34,16 +37,17 @@ VALUES ('connect', 'http://localhost:8190/auth/callback'),
 | redirect URIs | Matched **exactly** by fosite — scheme, host, port, path. Register dev and prod origins. |
 
 Generate the secret pair (plaintext goes to the product's `.env`, which
-is git-ignored; only the hash goes into the migration — never the
+is git-ignored; only the hash goes into the seed — never the
 plaintext):
 
 ```bash
 just client-secret        # prints OIDC_CLIENT_SECRET=<plaintext> + the hash
 ```
 
-Then apply it: `just migrate-up`. Rotate per environment before a real
-production deploy by editing the row (the migration is the dev/staging
-seed).
+Then apply it: `just seed-required` (idempotent, safe to re-run). Keep
+the seed files idempotent with `ON CONFLICT ... DO NOTHING` so they can
+run on every deploy. Rotate per environment before a real production
+deploy by editing the row (the seed row is the dev/staging value).
 
 ## 2. Endpoints
 
